@@ -406,10 +406,10 @@
       <textarea class="cap-input" id="captionText" rows="2" placeholder="Type your caption... drag it anywhere on the photo"></textarea>
             <button type="button" class="cap-clear" id="captionClear">Clear caption</button>
 
-      <div style="margin-top:16px; padding:14px; border:1.5px solid var(--line); border-radius:10px; background:var(--tint-purple);">
+      <div style="margin-top:16px; padding:14px; border:1.5px solid var(--line); border-radius:10px; background:linear-gradient(135deg, var(--tint-purple) 0%, var(--tint-blue) 100%);">
         <label>✨ AI Caption Suggestions</label>
-        <input type="text" id="aiCaptionStyle" class="cap-input" style="min-height:auto; height:38px;" placeholder="e.g. warm and playful, one sentence">
-        <button type="button" class="btn btn-secondary" id="aiSuggestBtn" style="margin-top:10px;">Suggest caption with AI</button>
+        <input type="text" id="aiCaptionStyle" class="cap-input" style="min-height:auto; height:38px; width:calc(100% + 20px); margin-left:-10px; margin-right:-10px;" placeholder="e.g. warm and playful, one sentence">
+        <button type="button" class="btn btn-secondary" id="aiSuggestBtn" style="margin-top:10px; font-size:12px;">Suggest caption with AI</button>
         <div id="aiCaptionError" style="display:none; margin-top:8px; font-size:12px; color:#B45309; background:#FEF3E2; border:1px solid #FCD9A8; border-radius:8px; padding:8px 10px;"></div>
       </div>
 
