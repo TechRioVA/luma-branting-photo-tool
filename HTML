@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luma Photo Branding Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Brand primaries */
+    --purple:#922B8F;
+    --purple-dark:#711F6F;
+    --green:#ACC051;
+    --orange:#FB9C25;
+    --blue:#7BAFD4;
+    /* Brand secondary tints */
+    --tint-orange:#F6E7D7;
+    --tint-green:#E6EFDA;
+    --tint-blue:#E3EDF4;
+    --tint-purple:#F3E8F2;
+    /* Neutrals */
+    --ink:#2B1F30;
+    --paper:#FAF8FB;
+    --panel:#FFFFFF;
+    --line:#E9E1EA;
+    --muted:#8A7F91;
+    --shadow:0 10px 28px rgba(84,32,90,.10);
+  }
+  *{box-sizing:border-box;}
+  html{
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+  }
+  body{
+    margin:0;
+    font-family:'Nunito Sans','Segoe UI',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 32px;
+    border-bottom:1px solid #5C1F60;
+    background:linear-gradient(120deg, #7E2E82 0%, #6B2570 55%, #591D5F 100%);
+    box-shadow:0 1px 0 rgba(43,15,45,.15);
+  }
+  header h1{
+    margin:0 0 3px;
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:.2px;
+    color:#FFFFFF;
+  }
+  header h1 span{color:#F6C87A;}
+  header p{
+    margin:0;
+    color:#E4C9E6;
+    font-size:12.5px;
+  }
+  header .brand-dots{display:flex; gap:6px; flex:0 0 auto;}
+  header .brand-dots i{width:9px; height:9px; border-radius:50%; display:block; box-shadow:0 0 0 1.5px rgba(255,255,255,.55);}
+  main{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:0;
+    overflow:hidden;
+  }
+  @media (max-width:880px){
+    main{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    padding:26px 24px;
+    height:100%;
+    min-height:0;
+    overflow-y:auto;
+  }
+  .panel::-webkit-scrollbar{width:8px;}
+  .panel::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+  .panel::-webkit-scrollbar-track{background:transparent;}
+  @media (max-width:880px){
+    .panel{border-right:none;border-bottom:1px solid var(--line);}
+  }
+  .field{margin-bottom:22px;}
+  .field label{
+    display:block;
+    font-family:'Poppins',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    color:var(--muted);
+    margin-bottom:9px;
+  }
+  .dropzone{
+    border:1.5px dashed #D9CADA;
+    border-radius:12px;
+    padding:20px 16px;
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    cursor:pointer;
+    transition:.15s;
+    background:var(--paper);
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--purple);
+    color:var(--purple);
+    background:var(--tint-purple);
+  }
+  .dropzone input{display:none;}
+  textarea.cap-input{
+    width:100%;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-family:'Nunito Sans',sans-serif;
+    font-size:13px;
+    color:var(--ink);
+    resize:vertical;
+    min-height:56px;
+    outline:none;
+    transition:.15s;
+  }
+  textarea.cap-input:focus{border-color:var(--purple); box-shadow:0 0 0 3px var(--tint-purple);}
+  .cap-clear{
+    display:inline-block;
+    margin-top:8px;
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--purple);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0;
+  }
+  .cap-clear:hover{text-decoration:underline;}
+  .row{display:flex; align-items:center; gap:12px;}
+  .row input[type=range]{
+    flex:1;
+    -webkit-appearance:none;
+    appearance:none;
+    height:5px;
+    border-radius:999px;
+    background:#EDE4EE;
+    outline:none;
+  }
+  .row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--purple);
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.25);
+    cursor:pointer;
+  }
+  .row input[type=range]::-moz-range-thumb{
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--purple);
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.25);
+    cursor:pointer;
+  }
+  .row .val{
+    font-size:12px;
+    width:40px;
+    text-align:right;
+    color:var(--ink);
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .swatches{display:flex; gap:14px;}
+  .swatch{display:flex; flex-direction:column; align-items:center; gap:7px;}
+  .swatch span{font-size:10.5px; color:var(--muted); font-weight:600;}
+  input[type=color]{
+    width:36px; height:36px; border:2px solid var(--line); border-radius:10px; padding:0; cursor:pointer;
+    background:none;
+    transition:.15s;
+  }
+  input[type=color]:hover{border-color:var(--purple);}
+  .toggle-row{display:flex; align-items:center; gap:9px; font-size:13.5px;}
+  .toggle-row input[type=checkbox]{
+    width:16px; height:16px;
+    accent-color:var(--purple);
+    cursor:pointer;
+  }
+  .btn{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    font-family:'Poppins',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    letter-spacing:.2px;
+    transition:.15s;
+  }
+  .btn-primary{background:var(--purple); color:#fff; margin-top:6px; box-shadow:0 4px 12px rgba(146,43,143,.25);}
+  .btn-primary:hover:not(:disabled){background:var(--purple-dark);}
+  .btn-primary:disabled{background:#E4D5E3; color:#B9A6B8; box-shadow:none; cursor:not-allowed;}
+  .btn-secondary{background:var(--tint-purple); color:var(--purple); margin-top:10px;}
+  .btn-secondary:hover{background:#EBD8EA;}
+  .divider{height:1px; background:var(--line); margin:24px 0;}
+
+  .photo-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:9px;
+    margin-top:12px;
+  }
+  .photo-thumb{
+    position:relative;
+    width:60px;
+    height:60px;
+    border-radius:9px;
+    overflow:hidden;
+    border:2px solid transparent;
+    cursor:pointer;
+    background:#eee;
+    transition:.15s;
+  }
+  .photo-thumb:hover{border-color:var(--tint-blue); box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .photo-thumb.active{border-color:var(--purple); box-shadow:0 2px 8px rgba(146,43,143,.25);}
+  .photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .photo-thumb .rm{
+    position:absolute; top:3px; right:3px;
+    width:17px; height:17px;
+    border-radius:50%;
+    background:rgba(43,31,48,.7);
+    color:#fff;
+    font-size:11px;
+    line-height:17px;
+    text-align:center;
+    cursor:pointer;
+  }
+
+  .stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:14px;
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+    position:relative;
+    background:
+      linear-gradient(45deg,#EFE9F1 25%,transparent 25%) -8px 0/16px 16px,
+      linear-gradient(-45deg,#EFE9F1 25%,transparent 25%) -8px 0/16px 16px,
+      linear-gradient(45deg,transparent 75%,#EFE9F1 75%) -8px 0/16px 16px,
+      linear-gradient(-45deg,transparent 75%,#EFE9F1 75%) -8px 0/16px 16px,
+      var(--paper);
+  }
+  .canvas-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 14px 34px rgba(60,20,70,.16);
+    border-radius:6px;
+    overflow:hidden;
+    line-height:0;
+  }
+  canvas{
+    display:block;
+    transition:transform .08s ease-out;
+    transform-origin:center center;
+    flex:0 0 auto;
+  }
+  canvas.cap-hover{cursor:grab;}
+  canvas.cap-dragging{cursor:grabbing;}
+  canvas.pan-enabled{cursor:grab;}
+  canvas.pan-enabled.cap-dragging{cursor:grabbing;}
+  .stage.pseudo-fullscreen{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:#1c1420;
+    padding:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .stage.pseudo-fullscreen .empty-state{display:none;}
+  .empty-state{
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.55;
+    max-width:300px;
+  }
+  .empty-state strong{color:var(--purple); font-family:'Poppins',sans-serif;}
+
+  .zoom-bar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    box-shadow:var(--shadow);
+  }
+  .zoom-bar button{
+    width:28px; height:28px;
+    border-radius:50%;
+    border:none;
+    background:var(--tint-purple);
+    color:var(--purple);
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    line-height:1;
+    transition:.15s;
+  }
+  .zoom-bar button:hover{background:#EBD8EA;}
+  .zoom-bar .pct{
+    font-size:12px;
+    color:var(--ink);
+    font-weight:600;
+    width:44px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .zoom-bar .reset{
+    font-size:11px;
+    color:var(--purple);
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-weight:700;
+    border-radius:0;
+    width:auto;
+    height:auto;
+    padding:0 4px;
+  }
+  .filecount{font-size:12px;color:var(--muted); margin-top:6px; font-weight:600;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>Luma</span> Photo Branding Tool</h1>
+    <p>Upload any number of photos, any size — the border and logo scale to fit each one automatically.</p>
+  </div>
+  <div class="brand-dots">
+    <i style="background:var(--green);"></i>
+    <i style="background:var(--orange);"></i>
+    <i style="background:var(--purple);"></i>
+    <i style="background:var(--blue);"></i>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+
+    <div class="field">
+      <label>1. Photos</label>
+      <div class="dropzone" id="photoDrop">
+        Click or drop photos here (multiple allowed)
+        <input type="file" id="photoInput" accept="image/*" multiple>
+      </div>
+      <div class="filecount" id="photoCount"></div>
+      <div class="photo-list" id="photoList"></div>
+    </div>
+
+    <div class="field">
+      <label>2. Logo (transparent PNG)</label>
+      <div class="dropzone" id="logoDrop">
+        Click or drop your logo PNG here
+        <span class="fname" id="logoName" style="display:block;margin-top:6px;font-weight:700;color:var(--ink);font-size:12px;word-break:break-all;"></span>
+        <input type="file" id="logoInput" accept="image/png">
+      </div>
+      <button type="button" class="cap-clear" id="logoClear" style="display:none;">Clear saved logo</button>
+      <div id="logoWarning" style="display:none; margin-top:8px; font-size:12px; color:#B45309; background:#FEF3E2; border:1px solid #FCD9A8; border-radius:8px; padding:8px 10px;"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>3. Caption (per photo)</label>
+      <div class="toggle-row" style="margin-bottom:12px;">
+        <input type="checkbox" id="showCaption">
+        <label style="margin:0; text-transform:none; font-weight:600; letter-spacing:0;">Show caption</label>
+      </div>
+      <textarea class="cap-input" id="captionText" rows="2" placeholder="Type your caption... drag it anywhere on the photo"></textarea>
+      <button type="button" class="cap-clear" id="captionClear">Clear caption</button>
+
+      <div class="row" style="margin-top:14px;">
+        <input type="range" id="captionSize" min="2" max="10" step="0.25" value="4.5">
+        <span class="val" id="captionSizeVal">4.5%</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:2px;">Font size</div>
+
+      <div class="row" style="margin-top:12px;">
+        <input type="range" id="captionPadding" min="10" max="70" step="1" value="30">
+        <span class="val" id="captionPaddingVal">30%</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:2px;">Background padding</div>
+
+      <div class="swatches" style="margin-top:12px;">
+        <div class="swatch"><input type="color" id="captionColor" value="#922b8f"><span>Background</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Corner arm length</label>
+      <div class="row"><input type="range" id="armLength" min="10" max="45" value="30"><span class="val" id="armLengthVal">30%</span></div>
+    </div>
+
+    <div class="field">
+      <label>Edge margin</label>
+      <div class="row"><input type="range" id="margin" min="0" max="8" value="3" step="0.5"><span class="val" id="marginVal">3%</span></div>
+    </div>
+
+    <div class="field">
+      <label>Line thickness</label>
+      <div class="row"><input type="range" id="lineWidth" min="1" max="15" value="6" step="0.5"><span class="val" id="lineWidthVal">6</span></div>
+    </div>
+
+    <div class="field">
+      <label>Logo size</label>
+      <div class="row"><input type="range" id="logoSize" min="10" max="50" value="26"><span class="val" id="logoSizeVal">26%</span></div>
+    </div>
+
+    <div class="field">
+      <label>Dot size</label>
+      <div class="row"><input type="range" id="dotSize" min="4" max="24" value="12" step="0.5"><span class="val" id="dotSizeVal">12</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Brand colors</label>
+      <div class="swatches">
+        <div class="swatch"><input type="color" id="colorPurple" value="#922b8f"><span>Bracket</span></div>
+        <div class="swatch"><input type="color" id="colorTeal" value="#7bafd4"><span>Dot 1</span></div>
+        <div class="swatch"><input type="color" id="colorOrange" value="#fb9c25"><span>Dot 2</span></div>
+        <div class="swatch"><input type="color" id="colorGreen" value="#acc051"><span>Dot 3</span></div>
+      </div>
+    </div>
+
+    <div class="field toggle-row">
+      <input type="checkbox" id="showDots" checked>
+      <label style="margin:0; text-transform:none; font-weight:600; letter-spacing:0;">Show dots (top-left)</label>
+    </div>
+
+    <div class="field toggle-row">
+      <input type="checkbox" id="showLogo" checked>
+      <label style="margin:0; text-transform:none; font-weight:600; letter-spacing:0;">Show logo (bottom-right)</label>
+    </div>
+
+    <div class="field toggle-row">
+      <input type="checkbox" id="logoBacking" checked>
+      <label style="margin:0; text-transform:none; font-weight:600; letter-spacing:0;">Add contrast backing behind logo</label>
+    </div>
+
+    <div class="field">
+      <label>Backing opacity</label>
+      <div class="row"><input type="range" id="backingOpacity" min="0" max="90" value="55" step="1"><span class="val" id="backingOpacityVal">55%</span></div>
+    </div>
+
+    <button class="btn btn-primary" id="downloadBtn" disabled>Download current photo</button>
+    <button class="btn btn-primary" id="downloadAllBtn" disabled style="background:var(--purple-dark);">Download all as ZIP</button>
+    <button class="btn btn-secondary" id="resetBtn">Reset border settings</button>
+  </div>
+
+  <div class="stage">
+    <div class="canvas-wrap" id="canvasWrap" style="display:none;">
+      <canvas id="canvas"></canvas>
+    </div>
+    <div class="empty-state" id="emptyState">
+      <strong>No photos yet.</strong><br><br>
+      Drop in one or more photos on the left — any size, any orientation. Each keeps the border and logo scaled to its own dimensions. Click a thumbnail to preview it, and use zoom to check detail.
+    </div>
+    <div class="zoom-bar" id="zoomBar" style="display:none;">
+      <button id="zoomOut">−</button>
+      <span class="pct" id="zoomPct">100%</span>
+      <button id="zoomIn">+</button>
+      <button class="reset" id="zoomReset">Reset</button>
+      <button class="reset" id="fullscreenBtn" style="border-left:1px solid var(--line); padding-left:12px; margin-left:2px;">⛶ Fullscreen</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const canvasWrap = document.getElementById('canvasWrap');
+const emptyState = document.getElementById('emptyState');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const zoomBar = document.getElementById('zoomBar');
+
+let photos = [];      // {id, name, img}
+let selectedId = null;
+let logoImg = null;
+let zoomLevel = 1;    // user-controlled zoom multiplier, always relative to fit-to-screen
+let baseScale = 1;    // fit-to-screen scale, recomputed on photo change / resize
+let panX = 0;          // pan offset in screen px, applied on top of zoom
+let panY = 0;
+
+const controls = ['armLength','margin','lineWidth','dotSize','logoSize'];
+const defaults = {armLength:30, margin:3, lineWidth:6, dotSize:12, logoSize:26};
+const noPercent = ['lineWidth','dotSize'];
+
+controls.forEach(id=>{
+  const el = document.getElementById(id);
+  const valEl = document.getElementById(id+'Val');
+  el.addEventListener('input', ()=>{
+    valEl.textContent = el.value + (noPercent.includes(id) ? '' : '%');
+    render();
+  });
+});
+
+['colorPurple','colorTeal','colorOrange','colorGreen','showDots','showLogo','logoBacking'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+  document.getElementById(id).addEventListener('change', render);
+});
+
+document.getElementById('backingOpacity').addEventListener('input', ()=>{
+  document.getElementById('backingOpacityVal').textContent = document.getElementById('backingOpacity').value + '%';
+  render();
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  controls.forEach(id=>{
+    document.getElementById(id).value = defaults[id];
+    document.getElementById(id+'Val').textContent = defaults[id] + (noPercent.includes(id) ? '' : '%');
+  });
+  document.getElementById('colorPurple').value = '#922b8f';
+  document.getElementById('colorTeal').value = '#7bafd4';
+  document.getElementById('colorOrange').value = '#fb9c25';
+  document.getElementById('colorGreen').value = '#acc051';
+  document.getElementById('showDots').checked = true;
+  document.getElementById('showLogo').checked = true;
+  document.getElementById('logoBacking').checked = true;
+  document.getElementById('backingOpacity').value = 55;
+  document.getElementById('backingOpacityVal').textContent = '55%';
+  render();
+});
+
+// ---------- Caption controls ----------
+const captionShowEl = document.getElementById('showCaption');
+const captionTextEl = document.getElementById('captionText');
+const captionSizeEl = document.getElementById('captionSize');
+const captionSizeValEl = document.getElementById('captionSizeVal');
+const captionPaddingEl = document.getElementById('captionPadding');
+const captionPaddingValEl = document.getElementById('captionPaddingVal');
+const captionColorEl = document.getElementById('captionColor');
+const captionClearEl = document.getElementById('captionClear');
+
+function syncCaptionControls(){
+  const p = getSelectedPhoto();
+  const cap = p ? p.caption : defaultCaption();
+  captionShowEl.checked = cap.show;
+  captionTextEl.value = cap.text;
+  captionSizeEl.value = cap.fontSizePct;
+  captionSizeValEl.textContent = cap.fontSizePct + '%';
+  captionPaddingEl.value = cap.paddingScale;
+  captionPaddingValEl.textContent = cap.paddingScale + '%';
+  captionColorEl.value = cap.color;
+}
+
+function updateSelectedCaption(mutator){
+  const p = getSelectedPhoto();
+  if(!p) return;
+  mutator(p.caption);
+  render();
+}
+
+captionShowEl.addEventListener('change', ()=>{
+  updateSelectedCaption(cap=>{ cap.show = captionShowEl.checked; });
+});
+captionTextEl.addEventListener('input', ()=>{
+  updateSelectedCaption(cap=>{ cap.text = captionTextEl.value; });
+});
+captionSizeEl.addEventListener('input', ()=>{
+  captionSizeValEl.textContent = captionSizeEl.value + '%';
+  updateSelectedCaption(cap=>{ cap.fontSizePct = parseFloat(captionSizeEl.value); });
+});
+captionPaddingEl.addEventListener('input', ()=>{
+  captionPaddingValEl.textContent = captionPaddingEl.value + '%';
+  updateSelectedCaption(cap=>{ cap.paddingScale = parseFloat(captionPaddingEl.value); });
+});
+captionColorEl.addEventListener('input', ()=>{
+  updateSelectedCaption(cap=>{ cap.color = captionColorEl.value; });
+});
+captionClearEl.addEventListener('click', ()=>{
+  updateSelectedCaption(cap=>{
+    cap.text = '';
+    cap.x = 0.5;
+    cap.y = 0.84;
+  });
+  syncCaptionControls();
+});
+
+// ---------- Photo upload (multiple) ----------
+const photoDrop = document.getElementById('photoDrop');
+const photoInput = document.getElementById('photoInput');
+photoDrop.addEventListener('click', ()=>photoInput.click());
+photoInput.addEventListener('change', e=>addPhotoFiles(e.target.files));
+['dragover','dragenter'].forEach(ev=>photoDrop.addEventListener(ev, e=>{e.preventDefault(); photoDrop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>photoDrop.addEventListener(ev, e=>{e.preventDefault(); photoDrop.classList.remove('drag');}));
+photoDrop.addEventListener('drop', e=>addPhotoFiles(e.dataTransfer.files));
+
+function defaultCaption(){
+  return { show:false, text:'', x:0.5, y:0.84, fontSizePct:4.5, paddingScale:30, color:'#922b8f' };
+}
+
+function addPhotoFiles(fileList){
+  const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+  files.forEach(file=>{
+    const id = 'p'+Date.now()+Math.random().toString(36).slice(2,7);
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>{
+        photos.push({id, name:file.name, img, caption:defaultCaption()});
+        if(!selectedId) selectedId = id;
+        refreshPhotoList();
+        canvasWrap.style.display = 'flex';
+        emptyState.style.display = 'none';
+        zoomBar.style.display = 'flex';
+        downloadBtn.disabled = false;
+        downloadAllBtn.disabled = photos.length < 2;
+        syncCaptionControls();
+        render();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function refreshPhotoList(){
+  const listEl = document.getElementById('photoList');
+  const countEl = document.getElementById('photoCount');
+  countEl.textContent = photos.length ? (photos.length + (photos.length===1 ? ' photo loaded' : ' photos loaded')) : '';
+  listEl.innerHTML = '';
+  photos.forEach(p=>{
+    const div = document.createElement('div');
+    div.className = 'photo-thumb' + (p.id === selectedId ? ' active' : '');
+    div.title = p.name;
+    const img = document.createElement('img');
+    img.src = p.img.src;
+    const rm = document.createElement('div');
+    rm.className = 'rm';
+    rm.textContent = '×';
+    rm.addEventListener('click', e=>{
+      e.stopPropagation();
+      photos = photos.filter(x=>x.id !== p.id);
+      if(selectedId === p.id) selectedId = photos.length ? photos[0].id : null;
+      refreshPhotoList();
+      downloadAllBtn.disabled = photos.length < 2;
+      if(!photos.length){
+        canvasWrap.style.display = 'none';
+        zoomBar.style.display = 'none';
+        emptyState.style.display = 'block';
+        downloadBtn.disabled = true;
+      } else {
+        syncCaptionControls();
+        render();
+      }
+    });
+    div.appendChild(img);
+    div.appendChild(rm);
+    div.addEventListener('click', ()=>{
+      selectedId = p.id;
+      resetZoomAndPan();
+      refreshPhotoList();
+      syncCaptionControls();
+      render();
+    });
+    listEl.appendChild(div);
+  });
+}
+
+// ---------- Logo upload ----------
+const LOGO_STORAGE_KEY = 'luma-saved-logo';
+const logoClearBtn = document.getElementById('logoClear');
+const logoNameEl = document.getElementById('logoName');
+
+function setupDropzone(dropId, inputId, nameId, onFile){
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  const nameEl = document.getElementById(nameId);
+  drop.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{e.preventDefault(); drop.classList.remove('drag');}));
+  drop.addEventListener('drop', e=>{ if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+  function handleFile(file){
+    nameEl.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>onFile(img, ev.target.result, file.name);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+setupDropzone('logoDrop','logoInput','logoName', (img, dataUrl, filename)=>{
+  logoImg = img;
+  checkLogoResolution();
+  saveLogoToStorage(dataUrl, filename);
+  render();
+});
+
+loadSavedLogo();
+
+// Uses localStorage. Note: this requires the page to be hosted as its own
+// top-level origin (not embedded in an iframe like a Google Sites embed),
+// since browsers block localStorage as third-party storage inside iframes.
+function saveLogoToStorage(dataUrl, filename){
+  try{
+    localStorage.setItem(LOGO_STORAGE_KEY, JSON.stringify({dataUrl, filename: filename || 'Saved logo'}));
+    logoClearBtn.style.display = 'inline-block';
+  }catch(err){
+    console.error('Could not save logo to browser storage:', err);
+  }
+}
+
+function loadSavedLogo(){
+  let saved;
+  try{
+    const raw = localStorage.getItem(LOGO_STORAGE_KEY);
+    if(!raw) return;
+    saved = JSON.parse(raw);
+  }catch(err){
+    console.error('Could not read saved logo:', err);
+    return;
+  }
+  if(!saved || !saved.dataUrl) return;
+  const img = new Image();
+  img.onload = ()=>{
+    logoImg = img;
+    logoNameEl.textContent = saved.filename || 'Saved logo';
+    logoClearBtn.style.display = 'inline-block';
+    checkLogoResolution();
+    render();
+  };
+  img.src = saved.dataUrl;
+}
+
+logoClearBtn.addEventListener('click', ()=>{
+  try{ localStorage.removeItem(LOGO_STORAGE_KEY); }catch(err){}
+  logoImg = null;
+  logoNameEl.textContent = '';
+  logoClearBtn.style.display = 'none';
+  document.getElementById('logoWarning').style.display = 'none';
+  render();
+});
+
+function checkLogoResolution(){
+  const warnEl = document.getElementById('logoWarning');
+  if(!logoImg){ warnEl.style.display = 'none'; return; }
+  const nw = logoImg.naturalWidth;
+  const recommendedMin = 900;
+  if(nw < recommendedMin){
+    warnEl.style.display = 'block';
+    warnEl.textContent = 'This logo is ' + nw + '×' + logoImg.naturalHeight + 'px — that is likely why it looks pixelated once enlarged. For a crisp result, re-save/export the logo at ' + recommendedMin + 'px+ wide.';
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+
+// ---------- Drawing ----------
+function roundedRect(c, x, y, w, h, r){
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function drawDot(c, x, y, r, color){
+  c.beginPath();
+  c.arc(x, y, r, 0, Math.PI*2);
+  c.fillStyle = color;
+  c.fill();
+}
+
+// ---------- Caption ----------
+function wrapCaptionLines(c, text, maxWidth){
+  const paragraphs = text.split('\n');
+  const lines = [];
+  paragraphs.forEach(paragraph=>{
+    if(paragraph.trim() === ''){ return; }
+    const words = paragraph.split(' ');
+    let current = '';
+    words.forEach(word=>{
+      const test = current ? current + ' ' + word : word;
+      if(current && c.measureText(test).width > maxWidth){
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    });
+    if(current) lines.push(current);
+  });
+  return lines;
+}
+
+function getCaptionLayout(c, w, h, base, cap){
+  if(!cap || !cap.show || !cap.text.trim()) return null;
+  const fontSize = base * (cap.fontSizePct/100);
+  c.font = '700 ' + fontSize + 'px Poppins, sans-serif';
+  const maxTextWidth = w * 0.78;
+  const rawLines = wrapCaptionLines(c, cap.text.trim(), maxTextWidth);
+  if(!rawLines.length) return null;
+
+  const paddingScale = (typeof cap.paddingScale === 'number' ? cap.paddingScale : 30) / 100;
+  const padX = fontSize * 0.6;
+  const padY = fontSize * paddingScale * 0.6;
+  const lineBoxH = fontSize + padY*2;
+  const gap = fontSize * 0.14;
+
+  const lineData = rawLines.map(text=>{
+    const lw = c.measureText(text).width;
+    return { text, lineW: Math.min(lw + padX*2, w*0.9) };
+  });
+  const maxBoxW = Math.max(...lineData.map(l=>l.lineW));
+  const totalH = lineData.length*lineBoxH + (lineData.length-1)*gap;
+
+  let centerX = cap.x*w;
+  centerX = Math.max(maxBoxW/2 + 4, Math.min(centerX, w - maxBoxW/2 - 4));
+  let topY = cap.y*h - totalH/2;
+  topY = Math.max(4, Math.min(topY, h - totalH - 4));
+
+  let cursorY = topY;
+  const lines = lineData.map(l=>{
+    const entry = { text:l.text, x:centerX - l.lineW/2, y:cursorY, w:l.lineW, h:lineBoxH };
+    cursorY += lineBoxH + gap;
+    return entry;
+  });
+
+  return {
+    boxX: centerX - maxBoxW/2, boxY: topY, boxW: maxBoxW, boxH: totalH,
+    centerX, lines, fontSize, lineBoxH, gap
+  };
+}
+
+function drawCaption(c, w, h, base, cap){
+  const layout = getCaptionLayout(c, w, h, base, cap);
+  if(!layout) return;
+  c.save();
+  c.font = '700 ' + layout.fontSize + 'px Poppins, sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  const r = Math.min(layout.lineBoxH*0.24, base*0.012);
+
+  layout.lines.forEach(line=>{
+    roundedRect(c, line.x, line.y, line.w, line.h, r);
+    c.fillStyle = cap.color;
+    c.fill();
+    c.fillStyle = '#FFFFFF';
+    c.fillText(line.text, line.x + line.w/2, line.y + line.h/2 + layout.fontSize*0.03);
+  });
+  c.restore();
+}
+
+function drawBrandedPhoto(targetCanvas, img, caption){
+  const c = targetCanvas.getContext('2d');
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  targetCanvas.width = w;
+  targetCanvas.height = h;
+
+  c.clearRect(0,0,w,h);
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(img, 0, 0, w, h);
+
+  const base = Math.min(w,h);
+  const marginPct = parseFloat(document.getElementById('margin').value)/100;
+  const armPct = parseFloat(document.getElementById('armLength').value)/100;
+  const lineW = parseFloat(document.getElementById('lineWidth').value)/1000 * base;
+  const dotR = parseFloat(document.getElementById('dotSize').value)/1000 * base;
+  const logoPct = parseFloat(document.getElementById('logoSize').value)/100;
+
+  const margin = base * marginPct;
+  const armW = w * armPct;
+  const armH = h * armPct;
+
+  const purple = document.getElementById('colorPurple').value;
+  const teal = document.getElementById('colorTeal').value;
+  const orange = document.getElementById('colorOrange').value;
+  const green = document.getElementById('colorGreen').value;
+
+  c.strokeStyle = purple;
+  c.lineWidth = lineW;
+  c.lineCap = 'butt';
+
+  c.beginPath();
+  c.moveTo(margin, margin + armH);
+  c.lineTo(margin, margin);
+  c.lineTo(margin + armW, margin);
+  c.stroke();
+
+  c.beginPath();
+  c.moveTo(w - margin - armW, h - margin);
+  c.lineTo(w - margin, h - margin);
+  c.lineTo(w - margin, h - margin - armH);
+  c.stroke();
+
+  if(document.getElementById('showDots').checked){
+    const dotY = margin + lineW*1.6 + dotR;
+    const startX = margin + dotR*1.4;
+    const gap = dotR * 2.6;
+    drawDot(c, startX, dotY, dotR, teal);
+    drawDot(c, startX + gap, dotY, dotR, orange);
+    drawDot(c, startX + gap*2, dotY, dotR, green);
+  }
+
+  if(document.getElementById('showLogo').checked && logoImg){
+    const logoW = w * logoPct;
+    const logoH = logoW * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const pad = margin + lineW*2;
+    const lx = w - pad - logoW;
+    const ly = h - pad - logoH;
+
+    if(document.getElementById('logoBacking').checked){
+      const opacity = parseFloat(document.getElementById('backingOpacity').value)/100;
+      const platePadX = base * 0.014;
+      const platePadY = base * 0.006;
+      const plateR = Math.min(logoH * 0.35, base * 0.02);
+      const plateColor = 'rgba(20,12,24,' + opacity + ')';
+      c.save();
+      c.shadowColor = plateColor;
+      c.shadowBlur = base * 0.012;
+      c.fillStyle = plateColor;
+      roundedRect(c, lx - platePadX, ly - platePadY, logoW + platePadX*2, logoH + platePadY*2, plateR);
+      c.fill();
+      c.restore();
+    }
+
+    c.drawImage(logoImg, lx, ly, logoW, logoH);
+  }
+
+  if(caption){
+    drawCaption(c, w, h, base, caption);
+  }
+}
+
+function getSelectedPhoto(){
+  return photos.find(p=>p.id === selectedId) || null;
+}
+
+function render(){
+  const p = getSelectedPhoto();
+  if(!p) return;
+  drawBrandedPhoto(canvas, p.img, p.caption);
+  fitCanvasToStage();
+  applyZoom();
+}
+
+function fitCanvasToStage(){
+  const stageEl = document.querySelector('.stage');
+  const zoomBarH = zoomBar.style.display !== 'none' ? 64 : 0;
+  const availW = stageEl.clientWidth - 24;
+  const availH = stageEl.clientHeight - zoomBarH - 24;
+  if(availW <= 0 || availH <= 0 || !canvas.width || !canvas.height) return;
+
+  // baseScale: the "100%" reference scale that fits the photo to the viewport.
+  // Kept separate from zoomLevel so zooming never changes layout size —
+  // only the transform changes, the wrap's box stays fixed (Canva-style viewport).
+  baseScale = Math.min(availW / canvas.width, availH / canvas.height);
+
+  // canvas keeps a fixed CSS size at baseScale (its "native fit" size).
+  // zoomLevel is then applied purely via transform in applyZoom(), on top of this.
+  canvas.style.width = (canvas.width * baseScale) + 'px';
+  canvas.style.height = (canvas.height * baseScale) + 'px';
+
+  // The wrap is a fixed-size viewport — it never grows/shrinks with zoom,
+  // so overflow:hidden always clips cleanly and no scrollbar can ever appear.
+  canvasWrap.style.width = availW + 'px';
+  canvasWrap.style.height = availH + 'px';
+}
+
+window.addEventListener('resize', ()=>{ fitCanvasToStage(); });
+
+// ---------- Zoom ----------
+// zoomLevel scales relative to the fitted (100%) size set in fitCanvasToStage().
+// The wrap's box is fixed, so this transform can push the canvas beyond the
+// wrap's edges and overflow:hidden simply clips it — no scrollbar, ever,
+// same as a Canva-style fixed viewport. panX/panY let the user slide the
+// zoomed-in image around within that fixed viewport.
+function clampPan(){
+  if(!canvas.width) return;
+  const dispW = canvas.width * baseScale * zoomLevel;
+  const dispH = canvas.height * baseScale * zoomLevel;
+  const wrapW = canvasWrap.clientWidth || dispW;
+  const wrapH = canvasWrap.clientHeight || dispH;
+  // max pan distance so the image edge never goes past the viewport edge
+  const maxX = Math.max(0, (dispW - wrapW) / 2);
+  const maxY = Math.max(0, (dispH - wrapH) / 2);
+  panX = Math.min(maxX, Math.max(-maxX, panX));
+  panY = Math.min(maxY, Math.max(-maxY, panY));
+}
+
+function applyZoom(){
+  clampPan();
+  canvas.style.transform = 'scale(' + zoomLevel + ') translate(' + (panX/zoomLevel) + 'px, ' + (panY/zoomLevel) + 'px)';
+  document.getElementById('zoomPct').textContent = Math.round(zoomLevel*100) + '%';
+  updatePanCursor();
+}
+
+function updatePanCursor(){
+  const pannable = zoomLevel > 1;
+  canvas.classList.toggle('pan-enabled', pannable);
+  if(!pannable){
+    canvas.classList.remove('cap-hover');
+  }
+}
+document.getElementById('zoomIn').addEventListener('click', ()=>{
+  zoomLevel = Math.min(4, +(zoomLevel + 0.25).toFixed(2));
+  applyZoom();
+});
+document.getElementById('zoomOut').addEventListener('click', ()=>{
+  zoomLevel = Math.max(0.25, +(zoomLevel - 0.25).toFixed(2));
+  applyZoom();
+});
+function resetZoomAndPan(){
+  zoomLevel = 1;
+  panX = 0;
+  panY = 0;
+}
+
+document.getElementById('zoomReset').addEventListener('click', ()=>{
+  resetZoomAndPan();
+  applyZoom();
+});
+canvasWrap.addEventListener('wheel', e=>{
+  if(!e.ctrlKey && !e.metaKey) return; // require ctrl/cmd+scroll to avoid hijacking page scroll
+  e.preventDefault();
+  zoomLevel = Math.min(4, Math.max(0.25, +(zoomLevel - e.deltaY*0.001).toFixed(2)));
+  applyZoom();
+}, {passive:false});
+
+document.getElementById('fullscreenBtn').addEventListener('click', ()=>{
+  const stageEl = document.querySelector('.stage');
+  const btn = document.getElementById('fullscreenBtn');
+  const isFull = stageEl.classList.toggle('pseudo-fullscreen');
+  btn.textContent = isFull ? '⤢ Exit fullscreen' : '⛶ Fullscreen';
+  document.body.style.overflow = isFull ? 'hidden' : '';
+  setTimeout(fitCanvasToStage, 30);
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){
+    const stageEl = document.querySelector('.stage');
+    if(stageEl.classList.contains('pseudo-fullscreen')){
+      stageEl.classList.remove('pseudo-fullscreen');
+      document.getElementById('fullscreenBtn').textContent = '⛶ Fullscreen';
+      document.body.style.overflow = '';
+      setTimeout(fitCanvasToStage, 30);
+    }
+  }
+});
+
+// ---------- Caption dragging & photo panning ----------
+let captionDrag = {active:false, photoId:null, offsetX:0, offsetY:0};
+let panDrag = {active:false, startX:0, startY:0, startPanX:0, startPanY:0};
+
+function getCanvasCoords(evt){
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (evt.clientX - rect.left) * scaleX,
+    y: (evt.clientY - rect.top) * scaleY
+  };
+}
+
+canvas.addEventListener('pointerdown', e=>{
+  const p = getSelectedPhoto();
+  if(!p || !canvas.width) return;
+  const pos = getCanvasCoords(e);
+  const base = Math.min(canvas.width, canvas.height);
+  const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
+  const hitCaption = layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH;
+
+  if(hitCaption){
+    captionDrag.active = true;
+    captionDrag.photoId = p.id;
+    captionDrag.offsetX = pos.x - (layout.boxX + layout.boxW/2);
+    captionDrag.offsetY = pos.y - (layout.boxY + layout.boxH/2);
+    canvas.classList.add('cap-dragging');
+    canvas.classList.remove('cap-hover');
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+
+  // Not on the caption — if zoomed in, drag anywhere to pan the photo, Canva-style.
+  if(zoomLevel > 1){
+    panDrag.active = true;
+    panDrag.startX = e.clientX;
+    panDrag.startY = e.clientY;
+    panDrag.startPanX = panX;
+    panDrag.startPanY = panY;
+    canvas.classList.add('cap-dragging');
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+});
+
+canvas.addEventListener('pointermove', e=>{
+  if(!canvas.width) return;
+  if(captionDrag.active){
+    const p = photos.find(x=>x.id===captionDrag.photoId);
+    if(!p) return;
+    const pos = getCanvasCoords(e);
+    const newCx = pos.x - captionDrag.offsetX;
+    const newCy = pos.y - captionDrag.offsetY;
+    p.caption.x = Math.min(1, Math.max(0, newCx / canvas.width));
+    p.caption.y = Math.min(1, Math.max(0, newCy / canvas.height));
+    render();
+    return;
+  }
+  if(panDrag.active){
+    panX = panDrag.startPanX + (e.clientX - panDrag.startX);
+    panY = panDrag.startPanY + (e.clientY - panDrag.startY);
+    applyZoom(); // transform + clamp only, no full redraw needed while panning
+    return;
+  }
+  const p = getSelectedPhoto();
+  if(!p){ canvas.classList.remove('cap-hover'); return; }
+  const pos = getCanvasCoords(e);
+  const base = Math.min(canvas.width, canvas.height);
+  const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
+  if(layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH){
+    canvas.classList.add('cap-hover');
+  } else {
+    canvas.classList.remove('cap-hover');
+  }
+});
+
+window.addEventListener('pointerup', ()=>{
+  if(captionDrag.active){
+    captionDrag.active = false;
+    canvas.classList.remove('cap-dragging');
+  }
+  if(panDrag.active){
+    panDrag.active = false;
+    canvas.classList.remove('cap-dragging');
+  }
+});
+
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(()=>{ render(); });
+}
+
+// ---------- Downloads ----------
+downloadBtn.addEventListener('click', ()=>{
+  const p = getSelectedPhoto();
+  if(!p) return;
+  const off = document.createElement('canvas');
+  drawBrandedPhoto(off, p.img, p.caption);
+  off.toBlob(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = baseName(p.name) + '-branded.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+});
+
+downloadAllBtn.addEventListener('click', async ()=>{
+  if(photos.length < 2) return;
+  downloadAllBtn.disabled = true;
+  downloadAllBtn.textContent = 'Zipping...';
+  const zip = new JSZip();
+  for(const p of photos){
+    const off = document.createElement('canvas');
+    drawBrandedPhoto(off, p.img, p.caption);
+    const blob = await new Promise(res=>off.toBlob(res, 'image/png'));
+    zip.file(baseName(p.name) + '-branded.png', blob);
+  }
+  const zipBlob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'luma-branded-photos.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+  downloadAllBtn.disabled = false;
+  downloadAllBtn.textContent = 'Download all as ZIP';
+});
+
+function baseName(filename){
+  return filename.replace(/\.[^/.]+$/, '');
+}
+</script>
+
+</body>
+</html>
