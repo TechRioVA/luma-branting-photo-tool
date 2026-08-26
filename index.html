@@ -306,16 +306,30 @@
       linear-gradient(-45deg,transparent 75%,#EFE9F1 75%) -8px 0/16px 16px,
       var(--paper);
   }
-  .canvas-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 14px 34px rgba(60,20,70,.16);
-  border-radius:6px;
-  overflow:hidden;
-  line-height:0;
-  position:relative;
-}
+    .canvas-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 14px 34px rgba(60,20,70,.16);
+    border-radius:6px;
+    overflow:hidden;
+    line-height:0;
+    position:relative;
+  }
+  .slide-stage{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    height:100%;
+    will-change:transform, opacity;
+  }
+  .photo-slide-ghost{
+    position:absolute;
+    pointer-events:none;
+    z-index:15;
+    will-change:transform, opacity;
+  }
   canvas{
     display:block;
     transition:transform .08s ease-out;
@@ -539,14 +553,21 @@
     body.mobile-sheet-open .mobile-ai-fab{
       display:none;
     }
-    .mobile-ai-fab.active{
+        .mobile-ai-fab.active{
       background:linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
-      box-shadow:0 8px 24px rgba(146,43,143,.55);
       animation:aiFabPulse 1.1s infinite ease-in-out;
     }
     @keyframes aiFabPulse{
-      0%, 100%{ transform:scale(1); }
-      50%{ transform:scale(1.1); }
+      0%, 100%{
+        transform:scale(1);
+        box-shadow:0 6px 16px rgba(146,43,143,.35);
+        filter:brightness(1);
+      }
+      50%{
+        transform:scale(1.1);
+        box-shadow:0 10px 26px rgba(146,43,143,.75);
+        filter:brightness(1.3);
+      }
     }
     .ai-fab-toast{
       display:none;
@@ -764,8 +785,10 @@
   <div class="stage">
     <button type="button" class="stage-nav prev" id="stagePrevBtn" aria-label="Previous photo">‹</button>
     <button type="button" class="stage-nav next" id="stageNextBtn" aria-label="Next photo">›</button>
-    <div class="canvas-wrap" id="canvasWrap" style="display:none;">
-      <canvas id="canvas"></canvas>
+        <div class="canvas-wrap" id="canvasWrap" style="display:none;">
+      <div class="slide-stage" id="slideStage">
+        <canvas id="canvas"></canvas>
+      </div>
       <button type="button" class="mobile-ai-fab" id="mobileAiFabBtn" aria-label="Suggest caption with AI">⚡</button>
       <div class="ai-fab-toast" id="aiFabToast"></div>
     </div>
@@ -1130,11 +1153,70 @@ function navigatePhoto(direction){
   const currentIndex = photos.findIndex(p=>p.id === selectedId);
   if(currentIndex === -1) return;
   const newIndex = (currentIndex + direction + photos.length) % photos.length;
-  selectedId = photos[newIndex].id;
+  slideToPhoto(photos[newIndex].id, direction);
+}
+
+const SLIDE_DURATION = 180; // ms — keep in sync with the transition timing below
+
+function slideToPhoto(newId, direction){
+  const slideStage = document.getElementById('slideStage');
+  const wrapRect = canvasWrap.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+
+  // Snapshot exactly what's on screen right now, so it can slide out
+  // while the new photo slides in — this is what gives the carousel feel.
+  let ghost = null;
+  if(canvas.width && canvas.height){
+    try{
+      const ghostSrc = canvas.toDataURL('image/png');
+      ghost = document.createElement('img');
+      ghost.src = ghostSrc;
+      ghost.className = 'photo-slide-ghost';
+      ghost.style.left = (canvasRect.left - wrapRect.left) + 'px';
+      ghost.style.top = (canvasRect.top - wrapRect.top) + 'px';
+      ghost.style.width = canvasRect.width + 'px';
+      ghost.style.height = canvasRect.height + 'px';
+      ghost.style.transition = 'transform ' + SLIDE_DURATION + 'ms ease, opacity ' + SLIDE_DURATION + 'ms ease';
+      canvasWrap.appendChild(ghost);
+    }catch(err){
+      ghost = null; // if the snapshot fails for any reason, just skip the ghost — still switches photos fine
+    }
+  }
+
+  selectedId = newId;
   resetZoomAndPan();
   refreshPhotoList();
   syncCaptionControls();
   render();
+
+  const outX = direction > 0 ? '-36px' : '36px';
+  const inStartX = direction > 0 ? '36px' : '-36px';
+
+  slideStage.style.transition = 'none';
+  slideStage.style.opacity = '0';
+  slideStage.style.transform = 'translateX(' + inStartX + ')';
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      slideStage.style.transition = 'transform ' + SLIDE_DURATION + 'ms ease, opacity ' + SLIDE_DURATION + 'ms ease';
+      slideStage.style.transform = 'translateX(0)';
+      slideStage.style.opacity = '1';
+
+      if(ghost){
+        ghost.style.transform = 'translateX(' + outX + ')';
+        ghost.style.opacity = '0';
+      }
+    });
+  });
+
+  setTimeout(()=>{
+    slideStage.style.transition = '';
+    slideStage.style.transform = '';
+    slideStage.style.opacity = '';
+    if(ghost && ghost.parentNode){
+      ghost.parentNode.removeChild(ghost);
+    }
+  }, SLIDE_DURATION + 40);
 }
 
 document.getElementById('stagePrevBtn').addEventListener('click', ()=>navigatePhoto(-1));
