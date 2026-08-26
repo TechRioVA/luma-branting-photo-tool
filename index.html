@@ -372,9 +372,10 @@
   .filecount{font-size:12px;color:var(--muted); margin-top:6px; font-weight:600;}
 
   /* ---------- Mobile: settings panel becomes a bottom sheet ---------- */
-  .sheet-header{display:none;}
+    .sheet-header{display:none;}
   .mobile-fab{display:none;}
   .sheet-backdrop{display:none;}
+  .zip-tip-toast{display:none;}
 
   @media (max-width:880px){
     main{
@@ -473,6 +474,39 @@
     input[type=color]{width:42px; height:42px;}
     .toggle-row input[type=checkbox]{width:20px; height:20px;}
     .zoom-bar button{width:36px; height:36px; font-size:19px;}
+
+    .zip-tip-toast{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      position:fixed;
+      left:16px;
+      right:16px;
+      bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+      background:var(--ink);
+      color:#fff;
+      font-size:13px;
+      line-height:1.45;
+      padding:14px 14px;
+      border-radius:14px;
+      box-shadow:0 10px 26px rgba(0,0,0,.3);
+      z-index:80;
+      transform:translateY(140%);
+      transition:transform .3s ease;
+    }
+    .zip-tip-toast.visible{
+      transform:translateY(0);
+    }
+    .zip-tip-toast button{
+      flex:0 0 auto;
+      background:none;
+      border:none;
+      color:#fff;
+      opacity:.7;
+      font-size:14px;
+      cursor:pointer;
+      padding:0 0 0 4px;
+    }
   }
 </style>
 </head>
@@ -643,6 +677,11 @@
 
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 <button type="button" class="mobile-fab" id="mobileSettingsBtn">⚙️ Edit Photo</button>
+
+<div class="zip-tip-toast" id="zipTipToast">
+  <span>📱 Zip downloaded! Open your phone's <strong>Files</strong> app and tap it to unzip your photos.</span>
+  <button type="button" id="zipTipClose" aria-label="Dismiss">✕</button>
+</div>
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -1447,6 +1486,7 @@ downloadAllBtn.addEventListener('click', async ()=>{
   URL.revokeObjectURL(url);
   downloadAllBtn.disabled = false;
   downloadAllBtn.textContent = 'Download all as ZIP';
+  showZipTip();
 });
 
 function baseName(filename){
@@ -1478,6 +1518,23 @@ function closeMobileSheet(){
 mobileFabBtn.addEventListener('click', openMobileSheet);
 sheetBackdropEl.addEventListener('click', closeMobileSheet);
 sheetCloseBtnEl.addEventListener('click', closeMobileSheet);
+
+// ---------- ZIP download tip (mobile only) ----------
+const zipTipToastEl = document.getElementById('zipTipToast');
+const zipTipCloseEl = document.getElementById('zipTipClose');
+let zipTipTimer = null;
+
+function showZipTip(){
+  if(!window.matchMedia('(max-width:880px)').matches) return;
+  zipTipToastEl.classList.add('visible');
+  clearTimeout(zipTipTimer);
+  zipTipTimer = setTimeout(hideZipTip, 7000);
+}
+function hideZipTip(){
+  zipTipToastEl.classList.remove('visible');
+  clearTimeout(zipTipTimer);
+}
+zipTipCloseEl.addEventListener('click', hideZipTip);
 </script>
 
 </body>
