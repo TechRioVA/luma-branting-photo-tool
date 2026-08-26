@@ -380,7 +380,9 @@
       transition:transform .28s ease;
       z-index:70;
       padding-top:14px;
+     overscroll-behavior:contain;
     }
+    
     body.mobile-sheet-open .panel{
       transform:translateY(0);
     }
@@ -1443,11 +1445,21 @@ const mobileFabBtn = document.getElementById('mobileSettingsBtn');
 const sheetBackdropEl = document.getElementById('sheetBackdrop');
 const sheetCloseBtnEl = document.getElementById('sheetCloseBtn');
 
+let lockedScrollY = 0;
+
 function openMobileSheet(){
+  lockedScrollY = window.scrollY;
   document.body.classList.add('mobile-sheet-open');
+  document.body.style.position = 'fixed';
+  document.body.style.top = -lockedScrollY + 'px';
+  document.body.style.width = '100%';
 }
 function closeMobileSheet(){
   document.body.classList.remove('mobile-sheet-open');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, lockedScrollY);
 }
 
 mobileFabBtn.addEventListener('click', openMobileSheet);
