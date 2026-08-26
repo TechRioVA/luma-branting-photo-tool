@@ -392,6 +392,30 @@
   }
   .filecount{font-size:12px;color:var(--muted); margin-top:6px; font-weight:600;}
 
+    .stage-nav{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    border:none;
+    background:rgba(43,31,48,.32);
+    color:#fff;
+    font-size:26px;
+    line-height:1;
+    cursor:pointer;
+    z-index:20;
+    transition:background .15s;
+  }
+  .stage-nav:hover{background:rgba(43,31,48,.55);}
+  .stage-nav.prev{left:14px;}
+  .stage-nav.next{right:14px;}
+  .stage-nav.visible{display:flex;}
+
   /* ---------- Mobile: settings panel becomes a bottom sheet ---------- */
     .sheet-header{display:none;}
   .mobile-fab{display:none;}
@@ -681,6 +705,8 @@
   </div>
 
   <div class="stage">
+    <button type="button" class="stage-nav prev" id="stagePrevBtn" aria-label="Previous photo">‹</button>
+    <button type="button" class="stage-nav next" id="stageNextBtn" aria-label="Next photo">›</button>
     <div class="canvas-wrap" id="canvasWrap" style="display:none;">
       <canvas id="canvas"></canvas>
     </div>
@@ -951,6 +977,8 @@ function addPhotoFiles(fileList){
 }
 
 function refreshPhotoList(){
+  updateStageNavVisibility();
+  const listEl = document.getElementById('photoList');
   const listEl = document.getElementById('photoList');
   const countEl = document.getElementById('photoCount');
   countEl.textContent = photos.length ? (photos.length + (photos.length===1 ? ' photo loaded' : ' photos loaded')) : '';
@@ -992,6 +1020,27 @@ function refreshPhotoList(){
     listEl.appendChild(div);
   });
 }
+
+function updateStageNavVisibility(){
+  const show = photos.length > 1;
+  document.getElementById('stagePrevBtn').classList.toggle('visible', show);
+  document.getElementById('stageNextBtn').classList.toggle('visible', show);
+}
+
+function navigatePhoto(direction){
+  if(photos.length < 2) return;
+  const currentIndex = photos.findIndex(p=>p.id === selectedId);
+  if(currentIndex === -1) return;
+  const newIndex = (currentIndex + direction + photos.length) % photos.length;
+  selectedId = photos[newIndex].id;
+  resetZoomAndPan();
+  refreshPhotoList();
+  syncCaptionControls();
+  render();
+}
+
+document.getElementById('stagePrevBtn').addEventListener('click', ()=>navigatePhoto(-1));
+document.getElementById('stageNextBtn').addEventListener('click', ()=>navigatePhoto(1));
 
 // ---------- Logo upload ----------
 const LOGO_STORAGE_KEY = 'luma-saved-logo';
