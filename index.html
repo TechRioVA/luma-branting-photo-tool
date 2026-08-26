@@ -307,14 +307,15 @@
       var(--paper);
   }
   .canvas-wrap{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 14px 34px rgba(60,20,70,.16);
-    border-radius:6px;
-    overflow:hidden;
-    line-height:0;
-  }
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 14px 34px rgba(60,20,70,.16);
+  border-radius:6px;
+  overflow:hidden;
+  line-height:0;
+  position:relative;
+}
   canvas{
     display:block;
     transition:transform .08s ease-out;
@@ -516,22 +517,22 @@
       display:none;
     }
 
-    .mobile-ai-fab{
+      .mobile-ai-fab{
       display:flex;
       align-items:center;
       justify-content:center;
-      position:fixed;
-      left:18px;
-      bottom:calc(18px + env(safe-area-inset-bottom, 0px));
-      z-index:60;
-      width:54px;
-      height:54px;
+      position:absolute;
+      left:14px;
+      bottom:14px;
+      z-index:30;
+      width:50px;
+      height:50px;
       border-radius:50%;
       border:none;
       background:linear-gradient(135deg, rgba(146,43,143,.5) 0%, rgba(113,31,111,.5) 100%);
       color:#fff;
-      font-size:22px;
-      box-shadow:0 8px 20px rgba(146,43,143,.25);
+      font-size:20px;
+      box-shadow:0 6px 16px rgba(146,43,143,.25);
       cursor:pointer;
       transition:background .25s ease, box-shadow .25s ease;
     }
@@ -549,11 +550,11 @@
     }
     .ai-fab-toast{
       display:none;
-      position:fixed;
-      left:16px;
-      max-width:230px;
-      bottom:calc(82px + env(safe-area-inset-bottom, 0px));
-      z-index:61;
+      position:absolute;
+      left:14px;
+      max-width:200px;
+      bottom:72px;
+      z-index:31;
       background:var(--ink);
       color:#fff;
       font-size:12px;
@@ -765,6 +766,8 @@
     <button type="button" class="stage-nav next" id="stageNextBtn" aria-label="Next photo">›</button>
     <div class="canvas-wrap" id="canvasWrap" style="display:none;">
       <canvas id="canvas"></canvas>
+      <button type="button" class="mobile-ai-fab" id="mobileAiFabBtn" aria-label="Suggest caption with AI">⚡</button>
+      <div class="ai-fab-toast" id="aiFabToast"></div>
     </div>
     <div class="empty-state" id="emptyState">
       <strong>No photos yet.</strong><br><br>
@@ -782,8 +785,7 @@
 
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 <button type="button" class="mobile-fab" id="mobileSettingsBtn">⚙️ Edit Photo</button>
-<button type="button" class="mobile-ai-fab" id="mobileAiFabBtn" aria-label="Suggest caption with AI">⚡</button>
-<div class="ai-fab-toast" id="aiFabToast"></div>
+
 
 <div class="zip-tip-toast" id="zipTipToast">
   <span>📱 Zip downloaded! Open your phone's <strong>Files</strong> app and tap it to unzip your photos.</span>
