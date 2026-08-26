@@ -615,7 +615,11 @@
 
       <div style="margin-top:16px; padding:14px; border:1.5px solid var(--line); border-radius:10px; background:linear-gradient(135deg, var(--tint-purple) 0%, var(--tint-blue) 100%);">
         <label>✨ AI Caption Suggestions</label>
-        <input type="text" id="aiCaptionStyle" class="cap-input" style="min-height:auto; height:38px; width:calc(100% + 20px); margin-left:-10px; margin-right:-10px;" placeholder="e.g. warm and playful, one sentence">
+                <input type="text" id="aiCaptionStyle" class="cap-input" style="min-height:auto; height:38px; width:calc(100% + 20px); margin-left:-10px; margin-right:-10px;" placeholder="e.g. warm and playful, one sentence">
+        <select id="aiModelSelect" style="width:100%; margin-top:8px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:12px; font-family:'Nunito Sans',sans-serif; color:var(--ink);">
+          <option value="gemini-3.6-flash">Gemini 3.6 Flash (newer)</option>
+          <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (higher daily limit)</option>
+        </select>
         <button type="button" class="btn btn-secondary" id="aiSuggestBtn" style="margin-top:10px; font-size:12px;">Suggest caption with AI</button>
         <div id="aiCaptionError" style="display:none; margin-top:8px; font-size:12px; color:#B45309; background:#FEF3E2; border:1px solid #FCD9A8; border-radius:8px; padding:8px 10px;"></div>
       </div>
@@ -804,6 +808,8 @@ const aiSuggestBtn = document.getElementById('aiSuggestBtn');
 const aiCaptionErrorEl = document.getElementById('aiCaptionError');
 
 const CAPTION_STYLE_STORAGE = 'luma-caption-style';
+const CAPTION_MODEL_STORAGE = 'luma-caption-model';
+const aiModelEl = document.getElementById('aiModelSelect');
 const CAPTION_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyxqOBoaf0leIImsfaGWFXLQRfKmrv6B7GGOOHktK0IksWUd4eCbIDGn7XjEVZhnO8iYA/exec';
 
 function syncCaptionControls(){
@@ -855,13 +861,20 @@ function loadAiCaptionSettings(){
   try{
     const savedStyle = localStorage.getItem(CAPTION_STYLE_STORAGE);
     if(savedStyle) aiStyleEl.value = savedStyle;
-  }catch(err){ console.error('Could not read saved caption style:', err); }
+    const savedModel = localStorage.getItem(CAPTION_MODEL_STORAGE);
+    if(savedModel) aiModelEl.value = savedModel;
+  }catch(err){ console.error('Could not read saved caption settings:', err); }
 }
 loadAiCaptionSettings();
 
 aiStyleEl.addEventListener('input', ()=>{
   try{ localStorage.setItem(CAPTION_STYLE_STORAGE, aiStyleEl.value); }
   catch(err){ console.error('Could not save caption style:', err); }
+});
+
+aiModelEl.addEventListener('change', ()=>{
+  try{ localStorage.setItem(CAPTION_MODEL_STORAGE, aiModelEl.value); }
+  catch(err){ console.error('Could not save caption model:', err); }
 });
 
 function downscaleImageToBase64(img, maxEdge){
@@ -902,13 +915,14 @@ aiSuggestBtn.addEventListener('click', async ()=>{
     const styleText = aiStyleEl.value.trim() || 'warm and friendly, one short sentence';
     const prompt = 'Write a short, punchy photo caption, under 12 words. Style: ' + styleText + '. Return only the caption text, no quotes, no extra commentary.';
 
-    const response = await fetch(CAPTION_PROXY_URL, {
+      const response = await fetch(CAPTION_PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         prompt: prompt,
         imageBase64: base64Image,
-        mimeType: 'image/jpeg'
+        mimeType: 'image/jpeg',
+        model: aiModelEl.value
       })
     });
 
@@ -928,9 +942,9 @@ aiSuggestBtn.addEventListener('click', async ()=>{
     updateSelectedCaption(cap=>{ cap.text = result; cap.show = true; });
     syncCaptionControls();
 
-  }catch(err){
+    }catch(err){
     console.error('AI caption error:', err);
-    aiCaptionErrorEl.textContent = 'Could not generate a caption (' + err.message + '). Please try again.';
+    aiCaptionErrorEl.textContent = err.message;
     aiCaptionErrorEl.style.display = 'block';
   }finally{
     aiSuggestBtn.disabled = false;
