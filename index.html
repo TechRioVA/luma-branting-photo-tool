@@ -385,13 +385,17 @@
       transform:translateY(0);
     }
 
-    .sheet-header{
+        .sheet-header{
       display:flex;
       align-items:center;
       justify-content:space-between;
       padding-bottom:14px;
       margin-bottom:14px;
       border-bottom:1px solid var(--line);
+      position:sticky;
+      top:0;
+      background:var(--panel);
+      z-index:5;
     }
     .sheet-header .sheet-title{
       font-family:'Poppins',sans-serif;
