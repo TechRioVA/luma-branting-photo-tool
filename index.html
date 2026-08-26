@@ -381,7 +381,7 @@
     main{
       height:100%;
     }
-    .panel{
+        .panel{
       position:fixed;
       left:0;
       right:0;
@@ -392,14 +392,16 @@
       border-radius:20px 20px 0 0;
       box-shadow:0 -10px 30px rgba(43,15,45,.25);
       transform:translateY(105%);
-      transition:transform .28s ease;
+      transition:transform .28s ease, opacity .15s ease;
       z-index:70;
       padding-top:14px;
-     overscroll-behavior:contain;
+      overscroll-behavior:contain;
     }
-    
     body.mobile-sheet-open .panel{
       transform:translateY(0);
+    }
+    .panel.previewing{
+      opacity:.25;
     }
 
         .sheet-header{
@@ -1535,6 +1537,15 @@ function hideZipTip(){
   clearTimeout(zipTipTimer);
 }
 zipTipCloseEl.addEventListener('click', hideZipTip);
+
+// ---------- Preview-through-panel while dragging any slider (mobile) ----------
+const panelEl = document.querySelector('.panel');
+const allSliders = document.querySelectorAll('input[type=range]');
+
+allSliders.forEach(slider=>{
+  slider.addEventListener('pointerdown', ()=>{ panelEl.classList.add('previewing'); });
+});
+window.addEventListener('pointerup', ()=>{ panelEl.classList.remove('previewing'); });
 </script>
 
 </body>
