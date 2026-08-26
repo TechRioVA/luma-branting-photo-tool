@@ -42,6 +42,7 @@
     background:var(--paper);
     color:var(--ink);
     height:100vh;
+    height:100dvh;
     display:flex;
     flex-direction:column;
     overflow:hidden;
@@ -354,6 +355,107 @@
     padding:0 4px;
   }
   .filecount{font-size:12px;color:var(--muted); margin-top:6px; font-weight:600;}
+
+  /* ---------- Mobile: settings panel becomes a bottom sheet ---------- */
+  .sheet-header{display:none;}
+  .mobile-fab{display:none;}
+  .sheet-backdrop{display:none;}
+
+  @media (max-width:880px){
+    main{
+      height:100%;
+    }
+    .panel{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      top:auto;
+      height:82dvh;
+      max-height:82dvh;
+      border-radius:20px 20px 0 0;
+      box-shadow:0 -10px 30px rgba(43,15,45,.25);
+      transform:translateY(105%);
+      transition:transform .28s ease;
+      z-index:70;
+      padding-top:14px;
+    }
+    body.mobile-sheet-open .panel{
+      transform:translateY(0);
+    }
+
+    .sheet-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding-bottom:14px;
+      margin-bottom:14px;
+      border-bottom:1px solid var(--line);
+    }
+    .sheet-header .sheet-title{
+      font-family:'Poppins',sans-serif;
+      font-weight:700;
+      font-size:15px;
+      color:var(--ink);
+    }
+    .sheet-header .sheet-close{
+      border:none;
+      background:var(--tint-purple);
+      color:var(--purple);
+      font-family:'Poppins',sans-serif;
+      font-weight:700;
+      font-size:12.5px;
+      padding:9px 16px;
+      border-radius:999px;
+      cursor:pointer;
+    }
+
+    .sheet-backdrop{
+      display:block;
+      position:fixed;
+      inset:0;
+      background:rgba(24,12,26,.45);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .28s ease;
+      z-index:65;
+    }
+    body.mobile-sheet-open .sheet-backdrop{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .mobile-fab{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      position:fixed;
+      right:18px;
+      bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+      z-index:60;
+      border:none;
+      background:var(--purple);
+      color:#fff;
+      font-family:'Poppins',sans-serif;
+      font-weight:600;
+      font-size:13.5px;
+      padding:13px 20px;
+      border-radius:999px;
+      box-shadow:0 8px 20px rgba(146,43,143,.35);
+      cursor:pointer;
+    }
+    body.mobile-sheet-open .mobile-fab{
+      display:none;
+    }
+
+    /* Bigger touch targets */
+    .row input[type=range]::-webkit-slider-thumb{width:24px; height:24px;}
+    .row input[type=range]::-moz-range-thumb{width:24px; height:24px;}
+    .row input[type=range]{height:7px;}
+    input[type=color]{width:42px; height:42px;}
+    .toggle-row input[type=checkbox]{width:20px; height:20px;}
+    .zoom-bar button{width:36px; height:36px; font-size:19px;}
+  }
 </style>
 </head>
 <body>
@@ -373,6 +475,11 @@
 
 <main>
   <div class="panel">
+
+    <div class="sheet-header">
+      <span class="sheet-title">Photo Settings</span>
+      <button type="button" class="sheet-close" id="sheetCloseBtn">Done</button>
+    </div>
 
     <div class="field">
       <label>1. Photos</label>
@@ -513,6 +620,9 @@
     </div>
   </div>
 </main>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<button type="button" class="mobile-fab" id="mobileSettingsBtn">⚙️ Edit Photo</button>
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -1322,6 +1432,22 @@ downloadAllBtn.addEventListener('click', async ()=>{
 function baseName(filename){
   return filename.replace(/\.[^/.]+$/, '');
 }
+
+// ---------- Mobile bottom sheet (settings panel) ----------
+const mobileFabBtn = document.getElementById('mobileSettingsBtn');
+const sheetBackdropEl = document.getElementById('sheetBackdrop');
+const sheetCloseBtnEl = document.getElementById('sheetCloseBtn');
+
+function openMobileSheet(){
+  document.body.classList.add('mobile-sheet-open');
+}
+function closeMobileSheet(){
+  document.body.classList.remove('mobile-sheet-open');
+}
+
+mobileFabBtn.addEventListener('click', openMobileSheet);
+sheetBackdropEl.addEventListener('click', closeMobileSheet);
+sheetCloseBtnEl.addEventListener('click', closeMobileSheet);
 </script>
 
 </body>
