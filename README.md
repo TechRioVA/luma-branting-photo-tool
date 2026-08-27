@@ -5,7 +5,6 @@ A personal, single-page tool for automatically applying my client's branded phot
 <p align="center">
   <img src="./Screenshot1.png" width="400" alt="Screenshot 1">
 </p>
-
 <p align="center">
   <img src="./Screenshot2.png" width="400" alt="Screenshot 2">
 </p>
@@ -39,7 +38,7 @@ I'm not a professional developer — I'm an aspiring automation and coding tech,
 5. Optionally add a caption manually, or tap "Suggest caption with AI" for an auto-generated one.
 6. Download the branded photo(s).
 
-No installation, build step, or server required on the frontend — it's a self-contained HTML file that runs entirely in the browser.
+No installation, build step, or server required on the frontend — it's a self-contained HTML file that runs entirely in the browser. On mobile or desktop, it can also be installed as an app straight from the browser (e.g. "Add to Home screen" on Android/iOS, or the install icon in Chrome/Edge) — no APK needed.
 
 ## Tech
 
