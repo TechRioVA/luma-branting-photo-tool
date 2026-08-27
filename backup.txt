@@ -1,3 +1,11 @@
+/**
+ * Google Apps Script — Web App backend
+ * Purpose: Proxies caption-generation requests from the Luma Photo
+ * Branding Tool to the Gemini API.
+ * Deploy: Google Apps Script → Deploy as Web App
+ * Note: Requires GEMINI_API_KEY set in Script Properties (not stored here).
+ */
+
 function doPost(e) {
   try {
     var props = PropertiesService.getScriptProperties();
