@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Luma Photo Branding Tool</title>
+  <link rel="manifest" href="./manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1706,6 +1707,11 @@ window.addEventListener('pointerup', ()=>{
 
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(()=>{ render(); });
+}
+  if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js');
+  });
 }
 
 // ---------- Downloads ----------
