@@ -739,9 +739,14 @@
       <div class="row"><input type="range" id="logoSize" min="10" max="50" value="26"><span class="val" id="logoSizeVal">26%</span></div>
     </div>
 
-    <div class="field">
+      <div class="field">
       <label>Dot size</label>
       <div class="row"><input type="range" id="dotSize" min="4" max="24" value="12" step="0.5"><span class="val" id="dotSizeVal">12</span></div>
+    </div>
+
+    <div class="field">
+      <label>Dot position</label>
+      <div class="row"><input type="range" id="dotOffset" min="-10" max="60" value="0" step="1"><span class="val" id="dotOffsetVal">0%</span></div>
     </div>
 
     <div class="divider"></div>
@@ -832,8 +837,8 @@ let baseScale = 1;    // fit-to-screen scale, recomputed on photo change / resiz
 let panX = 0;          // pan offset in screen px, applied on top of zoom
 let panY = 0;
 
-const controls = ['armLength','margin','lineWidth','dotSize','logoSize'];
-const defaults = {armLength:30, margin:3, lineWidth:6, dotSize:12, logoSize:26};
+const controls = ['armLength','margin','lineWidth','dotSize','dotOffset','logoSize'];
+const defaults = {armLength:30, margin:3, lineWidth:6, dotSize:12, dotOffset:0, logoSize:26};
 const noPercent = ['lineWidth','dotSize'];
 
 controls.forEach(id=>{
@@ -1456,8 +1461,9 @@ function drawBrandedPhoto(targetCanvas, img, caption){
   c.stroke();
 
   if(document.getElementById('showDots').checked){
+    const dotOffsetPct = parseFloat(document.getElementById('dotOffset').value)/100;
     const dotY = margin + lineW*1.6 + dotR;
-    const startX = margin + dotR*1.4;
+    const startX = margin + dotR*1.4 + (w * dotOffsetPct);
     const gap = dotR * 2.6;
     drawDot(c, startX, dotY, dotR, teal);
     drawDot(c, startX + gap, dotY, dotR, orange);
