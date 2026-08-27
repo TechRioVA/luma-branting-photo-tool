@@ -4,8 +4,12 @@ A personal, single-page tool for automatically applying my client's branded phot
 
 <p align="center">
   <img src="./Screenshot1.png" width="400" alt="Screenshot 1">
+</p>
+
+<p align="center">
   <img src="./Screenshot2.png" width="400" alt="Screenshot 2">
 </p>
+
 
 **Note:** This is a personal project for my own workflow/task automation. It's not an official product of my client, and it isn't intended for public or commercial distribution — just a convenience tool I built for myself.
 
