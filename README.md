@@ -2,6 +2,11 @@
 
 A personal, single-page tool for automatically applying my client's branded photo border (corner brackets, dots, and logo) to photos — built to save time instead of adding the border by hand in an editor for every photo.
 
+<p align="center">
+  <img src="./Screenshot1.png" width="400" alt="Screenshot 1">
+  <img src="./Screenshot2.png" width="400" alt="Screenshot 2">
+</p>
+
 **Note:** This is a personal project for my own workflow/task automation. It's not an official product of my client, and it isn't intended for public or commercial distribution — just a convenience tool I built for myself.
 
 ## What it does
