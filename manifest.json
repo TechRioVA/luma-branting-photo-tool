@@ -1,0 +1,17 @@
+{
+  "name": "LUMA Photo Branding",
+  "short_name": "LUMA Branding",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FAF8FB",
+  "theme_color": "#7E2E82",
+  "icons": [
+    {
+      "src": "photobranding_logo2.png",
+      "sizes": "2000x2000",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
