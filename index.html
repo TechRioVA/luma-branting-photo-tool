@@ -1751,6 +1751,7 @@ const sheetBackdropEl = document.getElementById('sheetBackdrop');
 const sheetCloseBtnEl = document.getElementById('sheetCloseBtn');
 
 let lockedScrollY = 0;
+let sheetHistoryPushed = false;
 
 function openMobileSheet(){
   lockedScrollY = window.scrollY;
@@ -1758,18 +1759,41 @@ function openMobileSheet(){
   document.body.style.position = 'fixed';
   document.body.style.top = -lockedScrollY + 'px';
   document.body.style.width = '100%';
+
+  // Add a history "marker" so the phone's back button closes the drawer
+  // instead of navigating away from the page.
+  history.pushState({ lumaSheet: true }, '');
+  sheetHistoryPushed = true;
 }
-function closeMobileSheet(){
+
+function closeMobileSheet(fromBackButton){
   document.body.classList.remove('mobile-sheet-open');
   document.body.style.position = '';
   document.body.style.top = '';
   document.body.style.width = '';
   window.scrollTo(0, lockedScrollY);
+
+  // If we're closing because the back button was pressed, the history
+  // marker is already consumed — nothing more to do. Otherwise (Done
+  // button or tapping the backdrop), clean up the marker ourselves so
+  // a future back-press doesn't do anything unexpected.
+  if(!fromBackButton && sheetHistoryPushed){
+    sheetHistoryPushed = false;
+    history.back();
+  } else {
+    sheetHistoryPushed = false;
+  }
 }
 
+window.addEventListener('popstate', ()=>{
+  if(document.body.classList.contains('mobile-sheet-open')){
+    closeMobileSheet(true);
+  }
+});
+
 mobileFabBtn.addEventListener('click', openMobileSheet);
-sheetBackdropEl.addEventListener('click', closeMobileSheet);
-sheetCloseBtnEl.addEventListener('click', closeMobileSheet);
+sheetBackdropEl.addEventListener('click', ()=>closeMobileSheet(false));
+sheetCloseBtnEl.addEventListener('click', ()=>closeMobileSheet(false));
 
 // ---------- ZIP download tip (mobile only) ----------
 const zipTipToastEl = document.getElementById('zipTipToast');
