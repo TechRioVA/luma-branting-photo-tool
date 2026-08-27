@@ -1,0 +1,84 @@
+function doPost(e) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var apiKey = props.getProperty('GEMINI_API_KEY');
+    if (!apiKey) {
+      return jsonResponse({ error: 'Server is missing an API key. Set GEMINI_API_KEY in Script Properties.' });
+    }
+
+    var body = JSON.parse(e.postData.contents);
+    var prompt = body.prompt;
+    var imageBase64 = body.imageBase64;
+    var mimeType = body.mimeType || 'image/jpeg';
+
+    var ALLOWED_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.6-flash'];
+    var model = body.model;
+    if (ALLOWED_MODELS.indexOf(model) === -1) {
+      model = 'gemini-3.6-flash';
+    }
+
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
+
+    var payload = {
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: mimeType, data: imageBase64 } }
+        ]
+      }]
+    };
+
+    var options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'x-goog-api-key': apiKey },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    var response = UrlFetchApp.fetch(geminiUrl, options);
+    var responseCode = response.getResponseCode();
+    var responseText = response.getContentText();
+
+    if (responseCode !== 200) {
+      return jsonResponse({ error: simplifyGeminiError(responseCode, responseText) });
+    }
+
+    var data = JSON.parse(responseText);
+    var parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+    var caption = parts && parts[0] && parts[0].text;
+
+    if (!caption) {
+      return jsonResponse({ error: 'No caption returned. Please try again.' });
+    }
+
+    return jsonResponse({ caption: caption.trim() });
+
+  } catch (err) {
+    return jsonResponse({ error: 'Something went wrong on the server. Please try again.' });
+  }
+}
+
+function simplifyGeminiError(responseCode, responseText) {
+  if (responseCode === 429) {
+    if (responseText.indexOf('PerDay') !== -1) {
+      return 'Daily limit reached for this model. Try again tomorrow, or switch models above.';
+    }
+    return 'Too many requests right now. Wait a few seconds and try again.';
+  }
+  if (responseCode === 400) {
+    return 'The request was invalid. Try a different photo or caption style.';
+  }
+  if (responseCode === 403) {
+    return 'Access denied. Please check the server\'s API key setup.';
+  }
+  if (responseCode >= 500) {
+    return 'Gemini is temporarily unavailable. Please try again in a moment.';
+  }
+  return 'Something went wrong generating a caption. Please try again.';
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
