@@ -10,6 +10,9 @@ A personal, single-page tool for automatically applying my client's branded phot
   <img src="./Screenshot2.png" width="400" alt="Screenshot 2">
 </p>
 
+## About this project
+
+I'm not a professional developer — I'm an aspiring automation and coding tech, and this tool was built almost entirely with the help of AI (Claude). I described what I needed, iterated on it conversationally, and put the pieces together myself. It's a real, working tool I use for actual client work, but the code reflects a learner's process rather than a formally trained engineer's — expect some rough edges under the hood even where the tool itself works smoothly.
 
 **Note:** This is a personal project for my own workflow/task automation. It's not an official product of my client, and it isn't intended for public or commercial distribution — just a convenience tool I built for myself.
 
@@ -20,7 +23,7 @@ A personal, single-page tool for automatically applying my client's branded phot
 - Adjustable border settings: corner arm length, edge margin, line thickness, dot size, dot position, logo size, and brand colors
 - Optional contrast backing behind the logo so it stays visible on both light and dark backgrounds
 - Add a caption to each photo, with adjustable font size, background padding, and color — draggable to any position
-- **AI caption suggestions** (via Gemini API) — generates a short caption based on the photo and an optional style prompt, with a switchable model (Gemini 3.6 Flash or Gemini 3.1 Flash-Lite) depending on daily quota needs
+- AI caption suggestions (via Gemini API) — generates a short caption based on the photo and an optional style prompt, with a switchable model (Gemini 3.6 Flash or Gemini 3.1 Flash-Lite) depending on daily quota needs
 - On mobile, a floating "⚡" button lets you generate an AI caption directly from the photo view without opening the settings drawer
 - Smooth slide animation when moving between photos (desktop and mobile)
 - Mobile-friendly settings drawer with native back-button support (closes the drawer instead of leaving the page)
@@ -45,4 +48,4 @@ No installation, build step, or server required on the frontend — it's a self-
 
 ## Status
 
-Actively tweaked for personal use — settings and layout may change as I keep refining my own workflow.
+Actively tweaked for personal use — settings and layout may change as I keep refining my own workflow and learning as I go.
