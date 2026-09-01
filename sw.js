@@ -9,12 +9,16 @@ const FILES_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-  return Promise.all(
-    FILES_TO_CACHE.map((url) =>
-      cache.add(url).catch((err) => console.warn('SW: failed to cache', url, err))
-    )
-  );
-})
+      // Cache each file individually so one missing/failed asset
+      // doesn't reject the whole install (unlike cache.addAll).
+      return Promise.all(
+        FILES_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('SW: failed to cache', url, err);
+          })
+        )
+      );
+    })
   );
   self.skipWaiting();
 });
