@@ -1800,6 +1800,7 @@ function updateCropCursor(e){
 }
 
 canvasWrap.addEventListener('pointerdown', e=>{
+  if(e.target === mobileAiFabBtn || mobileAiFabBtn.contains(e.target)) return;
   const p = getSelectedPhoto();
   if(!p || !canvas.width) return;
 
