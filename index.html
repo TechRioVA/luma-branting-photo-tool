@@ -838,6 +838,15 @@ let baseScale = 1;    // fit-to-screen scale, recomputed on photo change / resiz
 let panX = 0;          // pan offset in screen px, applied on top of zoom
 let panY = 0;
 
+// ---------- Instagram-safe crop (4:5) ----------
+const FRAME_W = 1080;
+const FRAME_H = 1350; // 4:5 aspect ratio — Instagram's tallest allowed portrait
+const HANDLE_PADDING = 40; // extra canvas space around the frame so handles stay visible when the photo is scaled beyond the frame
+const CROP_ZOOM_MIN = 1;
+const CROP_ZOOM_MAX = 4;
+let cropEditing = false; // true while the 8 resize/move handles are visible for the selected photo
+let currentHandleGeo = null; // handle positions from the last edit-mode render, used to detect clicks on them
+
 const controls = ['armLength','margin','lineWidth','dotSize','dotOffset','logoSize'];
 const defaults = {armLength:30, margin:3, lineWidth:6, dotSize:12, dotOffset:0, logoSize:26};
 const noPercent = ['lineWidth','dotSize'];
@@ -1079,6 +1088,10 @@ function defaultCaption(){
   return { show:false, text:'', x:0.5, y:0.84, fontSizePct:4.5, paddingScale:30, color:'#922b8f' };
 }
 
+function defaultCrop(){
+  return { zoom: 1, offsetX: 0, offsetY: 0 };
+}
+
 function addPhotoFiles(fileList){
   const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
   files.forEach(file=>{
@@ -1087,7 +1100,7 @@ function addPhotoFiles(fileList){
     reader.onload = ev=>{
       const img = new Image();
       img.onload = ()=>{
-        photos.push({id, name:file.name, img, caption:defaultCaption()});
+        photos.push({id, name:file.name, img, caption:defaultCaption(), crop:defaultCrop()});
         if(!selectedId) selectedId = id;
         refreshPhotoList();
         canvasWrap.style.display = 'flex';
@@ -1122,7 +1135,7 @@ function refreshPhotoList(){
     rm.addEventListener('click', e=>{
       e.stopPropagation();
       photos = photos.filter(x=>x.id !== p.id);
-      if(selectedId === p.id) selectedId = photos.length ? photos[0].id : null;
+      if(selectedId === p.id){ selectedId = photos.length ? photos[0].id : null; cropEditing = false; }
       refreshPhotoList();
       downloadAllBtn.disabled = photos.length < 2;
       if(!photos.length){
@@ -1140,6 +1153,7 @@ function refreshPhotoList(){
     div.addEventListener('click', ()=>{
       selectedId = p.id;
       resetZoomAndPan();
+      cropEditing = false;
       refreshPhotoList();
       syncCaptionControls();
       render();
@@ -1191,6 +1205,7 @@ function slideToPhoto(newId, direction){
 
   selectedId = newId;
   resetZoomAndPan();
+  cropEditing = false;
   refreshPhotoList();
   syncCaptionControls();
   render();
@@ -1417,17 +1432,48 @@ function drawCaption(c, w, h, base, cap){
   c.restore();
 }
 
-function drawBrandedPhoto(targetCanvas, img, caption){
-  const c = targetCanvas.getContext('2d');
-  const w = img.naturalWidth;
-  const h = img.naturalHeight;
-  targetCanvas.width = w;
-  targetCanvas.height = h;
+function coverScale(img, frameW, frameH){
+  return Math.max(frameW / img.naturalWidth, frameH / img.naturalHeight);
+}
 
-  c.clearRect(0,0,w,h);
+// Works out the image's draw size/position for a photo's current crop
+// settings, in coordinates local to the 4:5 frame (0,0 = frame's top-left).
+function computeCropGeometry(photo){
+  const img = photo.img;
+  const cover = coverScale(img, FRAME_W, FRAME_H);
+  const scale = cover * photo.crop.zoom;
+  const drawW = img.naturalWidth * scale;
+  const drawH = img.naturalHeight * scale;
+  const maxOffsetX = Math.max(0, (drawW - FRAME_W) / 2);
+  const maxOffsetY = Math.max(0, (drawH - FRAME_H) / 2);
+  photo.crop.offsetX = Math.min(maxOffsetX, Math.max(-maxOffsetX, photo.crop.offsetX));
+  photo.crop.offsetY = Math.min(maxOffsetY, Math.max(-maxOffsetY, photo.crop.offsetY));
+  const cx = FRAME_W/2 + photo.crop.offsetX;
+  const cy = FRAME_H/2 + photo.crop.offsetY;
+  return { drawW, drawH, cx, cy, maxOffsetX, maxOffsetY, scale };
+}
+
+// Draws the cropped photo + border + dots + logo + caption into a FRAME_W x
+// FRAME_H area on `c`, starting at (originX, originY). Used both for the
+// final export (origin 0,0) and for the live editing preview (origin offset
+// so the frame sits centered inside a bigger, padded canvas).
+function drawFrameContent(c, photo, originX, originY){
+  const w = FRAME_W, h = FRAME_H;
+  const geo = computeCropGeometry(photo);
+
+  c.save();
+  c.beginPath();
+  c.rect(originX, originY, w, h);
+  c.clip();
+
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
-  c.drawImage(img, 0, 0, w, h);
+  c.drawImage(
+    photo.img,
+    originX + geo.cx - geo.drawW/2,
+    originY + geo.cy - geo.drawH/2,
+    geo.drawW, geo.drawH
+  );
 
   const base = Math.min(w,h);
   const marginPct = parseFloat(document.getElementById('margin').value)/100;
@@ -1450,21 +1496,21 @@ function drawBrandedPhoto(targetCanvas, img, caption){
   c.lineCap = 'butt';
 
   c.beginPath();
-  c.moveTo(margin, margin + armH);
-  c.lineTo(margin, margin);
-  c.lineTo(margin + armW, margin);
+  c.moveTo(originX + margin, originY + margin + armH);
+  c.lineTo(originX + margin, originY + margin);
+  c.lineTo(originX + margin + armW, originY + margin);
   c.stroke();
 
   c.beginPath();
-  c.moveTo(w - margin - armW, h - margin);
-  c.lineTo(w - margin, h - margin);
-  c.lineTo(w - margin, h - margin - armH);
+  c.moveTo(originX + w - margin - armW, originY + h - margin);
+  c.lineTo(originX + w - margin, originY + h - margin);
+  c.lineTo(originX + w - margin, originY + h - margin - armH);
   c.stroke();
 
   if(document.getElementById('showDots').checked){
     const dotOffsetPct = parseFloat(document.getElementById('dotOffset').value)/100;
-    const dotY = margin + lineW*1.6 + dotR;
-    const startX = margin + dotR*1.4 + (w * dotOffsetPct);
+    const dotY = originY + margin + lineW*1.6 + dotR;
+    const startX = originX + margin + dotR*1.4 + (w * dotOffsetPct);
     const gap = dotR * 2.6;
     drawDot(c, startX, dotY, dotR, teal);
     drawDot(c, startX + gap, dotY, dotR, orange);
@@ -1475,8 +1521,8 @@ function drawBrandedPhoto(targetCanvas, img, caption){
     const logoW = w * logoPct;
     const logoH = logoW * (logoImg.naturalHeight / logoImg.naturalWidth);
     const pad = margin + lineW*2;
-    const lx = w - pad - logoW;
-    const ly = h - pad - logoH;
+    const lx = originX + w - pad - logoW;
+    const ly = originY + h - pad - logoH;
 
     if(document.getElementById('logoBacking').checked){
       const opacity = parseFloat(document.getElementById('backingOpacity').value)/100;
@@ -1496,9 +1542,96 @@ function drawBrandedPhoto(targetCanvas, img, caption){
     c.drawImage(logoImg, lx, ly, logoW, logoH);
   }
 
-  if(caption){
-    drawCaption(c, w, h, base, caption);
+  if(photo.caption){
+    c.save();
+    c.translate(originX, originY);
+    drawCaption(c, w, h, base, photo.caption);
+    c.restore();
   }
+
+  c.restore();
+}
+
+// Final export/preview render: canvas is exactly FRAME_W x FRAME_H, no handles.
+function drawBrandedPhoto(targetCanvas, photo){
+  targetCanvas.width = FRAME_W;
+  targetCanvas.height = FRAME_H;
+  const c = targetCanvas.getContext('2d');
+  c.clearRect(0,0,FRAME_W,FRAME_H);
+  drawFrameContent(c, photo, 0, 0);
+}
+
+// Editing render: canvas is padded so the photo can extend past the frame and
+// the 8 handles stay visible/clickable, with everything outside the frame dimmed.
+function drawCropEditingView(targetCanvas, photo){
+  const geo = computeCropGeometry(photo);
+  const canvasW = Math.max(FRAME_W, geo.drawW) + HANDLE_PADDING*2;
+  const canvasH = Math.max(FRAME_H, geo.drawH) + HANDLE_PADDING*2;
+  targetCanvas.width = canvasW;
+  targetCanvas.height = canvasH;
+  const c = targetCanvas.getContext('2d');
+  c.clearRect(0,0,canvasW,canvasH);
+
+  const originX = (canvasW - FRAME_W)/2;
+  const originY = (canvasH - FRAME_H)/2;
+
+  c.save();
+  c.globalAlpha = 0.35;
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(
+    photo.img,
+    originX + geo.cx - geo.drawW/2,
+    originY + geo.cy - geo.drawH/2,
+    geo.drawW, geo.drawH
+  );
+  c.restore();
+
+  drawFrameContent(c, photo, originX, originY);
+
+  c.save();
+  c.strokeStyle = 'rgba(255,255,255,0.9)';
+  c.lineWidth = 2;
+  c.setLineDash([8,6]);
+  c.strokeRect(originX, originY, FRAME_W, FRAME_H);
+  c.restore();
+
+  const left = originX + geo.cx - geo.drawW/2;
+  const right = originX + geo.cx + geo.drawW/2;
+  const top = originY + geo.cy - geo.drawH/2;
+  const bottom = originY + geo.cy + geo.drawH/2;
+  const midX = (left+right)/2;
+  const midY = (top+bottom)/2;
+
+  const corners = [[left,top],[right,top],[left,bottom],[right,bottom]];
+  const edges = [[midX,top],[midX,bottom],[left,midY],[right,midY]];
+
+  c.save();
+  corners.forEach(([hx,hy])=>{
+    c.beginPath();
+    c.arc(hx, hy, 10, 0, Math.PI*2);
+    c.fillStyle = '#FFFFFF';
+    c.fill();
+    c.lineWidth = 2;
+    c.strokeStyle = '#922B8F';
+    c.stroke();
+  });
+  edges.forEach(([hx,hy])=>{
+    const horizontal = (hy === top || hy === bottom);
+    c.beginPath();
+    if(horizontal){ c.moveTo(hx-9,hy); c.lineTo(hx+9,hy); }
+    else{ c.moveTo(hx,hy-9); c.lineTo(hx,hy+9); }
+    c.lineWidth = 5;
+    c.strokeStyle = '#FFFFFF';
+    c.lineCap = 'round';
+    c.stroke();
+    c.lineWidth = 2;
+    c.strokeStyle = '#922B8F';
+    c.stroke();
+  });
+  c.restore();
+
+  return { originX, originY, left, right, top, bottom, midX, midY };
 }
 
 function getSelectedPhoto(){
@@ -1508,7 +1641,12 @@ function getSelectedPhoto(){
 function render(){
   const p = getSelectedPhoto();
   if(!p) return;
-  drawBrandedPhoto(canvas, p.img, p.caption);
+  if(cropEditing){
+    currentHandleGeo = drawCropEditingView(canvas, p);
+  } else {
+    currentHandleGeo = null;
+    drawBrandedPhoto(canvas, p);
+  }
   fitCanvasToStage();
   applyZoom();
 }
@@ -1565,7 +1703,7 @@ function applyZoom(){
 }
 
 function updatePanCursor(){
-  const pannable = zoomLevel > 1;
+  const pannable = zoomLevel > 1 || cropEditing;
   canvas.classList.toggle('pan-enabled', pannable);
   if(!pannable){
     canvas.classList.remove('cap-hover');
@@ -1613,12 +1751,18 @@ document.addEventListener('keydown', e=>{
       document.body.style.overflow = '';
       setTimeout(fitCanvasToStage, 30);
     }
+    if(cropEditing){
+      cropEditing = false;
+      render();
+    }
   }
 });
 
 // ---------- Caption dragging & photo panning ----------
 let captionDrag = {active:false, photoId:null, offsetX:0, offsetY:0};
 let panDrag = {active:false, startX:0, startY:0, startPanX:0, startPanY:0};
+let handleDrag = {active:false, photoId:null, cx:0, cy:0, startDist:0, startZoom:1};
+let cropPanDrag = {active:false, photoId:null, startX:0, startY:0, startOffsetX:0, startOffsetY:0};
 
 function getCanvasCoords(evt){
   const rect = canvas.getBoundingClientRect();
@@ -1634,23 +1778,78 @@ canvas.addEventListener('pointerdown', e=>{
   const p = getSelectedPhoto();
   if(!p || !canvas.width) return;
   const pos = getCanvasCoords(e);
-  const base = Math.min(canvas.width, canvas.height);
-  const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
-  const hitCaption = layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH;
 
-  if(hitCaption){
-    captionDrag.active = true;
-    captionDrag.photoId = p.id;
-    captionDrag.offsetX = pos.x - (layout.boxX + layout.boxW/2);
-    captionDrag.offsetY = pos.y - (layout.boxY + layout.boxH/2);
-    canvas.classList.add('cap-dragging');
-    canvas.classList.remove('cap-hover');
+  // Caption dragging, only outside crop-editing mode.
+  if(!cropEditing){
+    const base = Math.min(FRAME_W, FRAME_H);
+    const layout = getCaptionLayout(ctx, FRAME_W, FRAME_H, base, p.caption);
+    const hitCaption = layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH;
+    if(hitCaption){
+      captionDrag.active = true;
+      captionDrag.photoId = p.id;
+      captionDrag.offsetX = pos.x - (layout.boxX + layout.boxW/2);
+      captionDrag.offsetY = pos.y - (layout.boxY + layout.boxH/2);
+      canvas.classList.add('cap-dragging');
+      canvas.classList.remove('cap-hover');
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+  }
+
+  if(cropEditing && currentHandleGeo){
+    const g = currentHandleGeo;
+    const handleR = 16;
+    const points = [
+      [g.left, g.top], [g.right, g.top], [g.left, g.bottom], [g.right, g.bottom],
+      [g.midX, g.top], [g.midX, g.bottom], [g.left, g.midY], [g.right, g.midY]
+    ];
+    const hitHandle = points.find(([hx,hy])=> Math.hypot(pos.x-hx, pos.y-hy) <= handleR);
+    if(hitHandle){
+      const geo = computeCropGeometry(p);
+      handleDrag.active = true;
+      handleDrag.photoId = p.id;
+      handleDrag.cx = g.originX + geo.cx;
+      handleDrag.cy = g.originY + geo.cy;
+      handleDrag.startDist = Math.max(1, Math.hypot(pos.x - handleDrag.cx, pos.y - handleDrag.cy));
+      handleDrag.startZoom = p.crop.zoom;
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if(pos.x >= g.left && pos.x <= g.right && pos.y >= g.top && pos.y <= g.bottom){
+      cropPanDrag.active = true;
+      cropPanDrag.photoId = p.id;
+      cropPanDrag.startX = pos.x;
+      cropPanDrag.startY = pos.y;
+      cropPanDrag.startOffsetX = p.crop.offsetX;
+      cropPanDrag.startOffsetY = p.crop.offsetY;
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    cropEditing = false;
+    render();
+    return;
+  }
+
+  if(!cropEditing && pos.x >= 0 && pos.x <= FRAME_W && pos.y >= 0 && pos.y <= FRAME_H){
+    // First click on the photo selects it for crop editing, and lets you
+    // drag to move it in the very same motion.
+    cropEditing = true;
+    render();
+    const newPos = getCanvasCoords(e);
+    cropPanDrag.active = true;
+    cropPanDrag.photoId = p.id;
+    cropPanDrag.startX = newPos.x;
+    cropPanDrag.startY = newPos.y;
+    cropPanDrag.startOffsetX = p.crop.offsetX;
+    cropPanDrag.startOffsetY = p.crop.offsetY;
     canvas.setPointerCapture(e.pointerId);
     e.preventDefault();
     return;
   }
 
-  // Not on the caption — if zoomed in, drag anywhere to pan the photo, Canva-style.
   if(zoomLevel > 1){
     panDrag.active = true;
     panDrag.startX = e.clientX;
@@ -1671,22 +1870,42 @@ canvas.addEventListener('pointermove', e=>{
     const pos = getCanvasCoords(e);
     const newCx = pos.x - captionDrag.offsetX;
     const newCy = pos.y - captionDrag.offsetY;
-    p.caption.x = Math.min(1, Math.max(0, newCx / canvas.width));
-    p.caption.y = Math.min(1, Math.max(0, newCy / canvas.height));
+    p.caption.x = Math.min(1, Math.max(0, newCx / FRAME_W));
+    p.caption.y = Math.min(1, Math.max(0, newCy / FRAME_H));
+    render();
+    return;
+  }
+  if(handleDrag.active){
+    const p = photos.find(x=>x.id===handleDrag.photoId);
+    if(!p) return;
+    const pos = getCanvasCoords(e);
+    const dist = Math.max(1, Math.hypot(pos.x - handleDrag.cx, pos.y - handleDrag.cy));
+    const newZoom = handleDrag.startZoom * (dist / handleDrag.startDist);
+    p.crop.zoom = Math.min(CROP_ZOOM_MAX, Math.max(CROP_ZOOM_MIN, newZoom));
+    render();
+    return;
+  }
+  if(cropPanDrag.active){
+    const p = photos.find(x=>x.id===cropPanDrag.photoId);
+    if(!p) return;
+    const pos = getCanvasCoords(e);
+    p.crop.offsetX = cropPanDrag.startOffsetX + (pos.x - cropPanDrag.startX);
+    p.crop.offsetY = cropPanDrag.startOffsetY + (pos.y - cropPanDrag.startY);
     render();
     return;
   }
   if(panDrag.active){
     panX = panDrag.startPanX + (e.clientX - panDrag.startX);
     panY = panDrag.startPanY + (e.clientY - panDrag.startY);
-    applyZoom(); // transform + clamp only, no full redraw needed while panning
+    applyZoom();
     return;
   }
+  if(cropEditing) return;
   const p = getSelectedPhoto();
   if(!p){ canvas.classList.remove('cap-hover'); return; }
   const pos = getCanvasCoords(e);
-  const base = Math.min(canvas.width, canvas.height);
-  const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
+  const base = Math.min(FRAME_W, FRAME_H);
+  const layout = getCaptionLayout(ctx, FRAME_W, FRAME_H, base, p.caption);
   if(layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH){
     canvas.classList.add('cap-hover');
   } else {
@@ -1699,9 +1918,22 @@ window.addEventListener('pointerup', ()=>{
     captionDrag.active = false;
     canvas.classList.remove('cap-dragging');
   }
+  if(handleDrag.active){
+    handleDrag.active = false;
+  }
+  if(cropPanDrag.active){
+    cropPanDrag.active = false;
+  }
   if(panDrag.active){
     panDrag.active = false;
     canvas.classList.remove('cap-dragging');
+  }
+});
+
+document.addEventListener('pointerdown', e=>{
+  if(cropEditing && e.target !== canvas){
+    cropEditing = false;
+    render();
   }
 });
 
@@ -1719,7 +1951,7 @@ downloadBtn.addEventListener('click', ()=>{
   const p = getSelectedPhoto();
   if(!p) return;
   const off = document.createElement('canvas');
-  drawBrandedPhoto(off, p.img, p.caption);
+  drawBrandedPhoto(off, p);
   off.toBlob(blob=>{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1737,7 +1969,7 @@ downloadAllBtn.addEventListener('click', async ()=>{
   const zip = new JSZip();
   for(const p of photos){
     const off = document.createElement('canvas');
-    drawBrandedPhoto(off, p.img, p.caption);
+    drawBrandedPhoto(off, p);
     const blob = await new Promise(res=>off.toBlob(res, 'image/png'));
     zip.file(baseName(p.name) + '-branded.png', blob);
   }
