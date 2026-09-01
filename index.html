@@ -1799,7 +1799,7 @@ function updateCropCursor(e){
   if(hit) canvas.style.cursor = hit.cursor;
 }
 
-canvas.addEventListener('pointerdown', e=>{
+canvasWrap.addEventListener('pointerdown', e=>{
   const p = getSelectedPhoto();
   if(!p || !canvas.width) return;
 
@@ -1903,7 +1903,7 @@ canvas.addEventListener('pointerdown', e=>{
   }
 });
 
-canvas.addEventListener('pointermove', e=>{
+canvasWrap.addEventListener('pointermove', e=>{
   if(!canvas.width) return;
 
   if(activePointers.has(e.pointerId)){
@@ -1915,7 +1915,8 @@ canvas.addEventListener('pointermove', e=>{
     if(!p || activePointers.size < 2){ return; }
     const pts = Array.from(activePointers.values());
     const dist = Math.max(1, Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y));
-    const newZoom = pinchZoom.startZoom * (dist / pinchZoom.startDist);
+    const pinchRatio = dist / pinchZoom.startDist;
+    const newZoom = pinchZoom.startZoom * Math.pow(pinchRatio, 1.5);
     p.crop.zoom = Math.min(CROP_ZOOM_MAX, Math.max(CROP_ZOOM_MIN, newZoom));
     render();
     return;
@@ -1992,7 +1993,7 @@ window.addEventListener('pointerup', e=>{
 });
 
 document.addEventListener('pointerdown', e=>{
-  if(cropEditing && e.target !== canvas){
+  if(cropEditing && !canvasWrap.contains(e.target)){
     cropEditing = false;
     render();
   }
