@@ -1610,7 +1610,7 @@ function drawCropEditingView(targetCanvas, photo){
   c.save();
   corners.forEach(([hx,hy])=>{
     c.beginPath();
-    c.arc(hx, hy, 10, 0, Math.PI*2);
+    c.arc(hx, hy, 14, 0, Math.PI*2);
     c.fillStyle = '#FFFFFF';
     c.fill();
     c.lineWidth = 2;
@@ -1620,9 +1620,9 @@ function drawCropEditingView(targetCanvas, photo){
   edges.forEach(([hx,hy])=>{
     const horizontal = (hy === top || hy === bottom);
     c.beginPath();
-    if(horizontal){ c.moveTo(hx-9,hy); c.lineTo(hx+9,hy); }
-    else{ c.moveTo(hx,hy-9); c.lineTo(hx,hy+9); }
-    c.lineWidth = 5;
+    if(horizontal){ c.moveTo(hx-13,hy); c.lineTo(hx+13,hy); }
+    else{ c.moveTo(hx,hy-13); c.lineTo(hx,hy+13); }
+    c.lineWidth = 7;
     c.strokeStyle = '#FFFFFF';
     c.lineCap = 'round';
     c.stroke();
@@ -1646,6 +1646,7 @@ function render(){
     currentHandleGeo = drawCropEditingView(canvas, p);
   } else {
     currentHandleGeo = null;
+    canvas.style.cursor = '';
     drawBrandedPhoto(canvas, p);
   }
   fitCanvasToStage();
@@ -1777,6 +1778,27 @@ function getCanvasCoords(evt){
   };
 }
 
+
+function updateCropCursor(e){
+  canvas.style.cursor = 'grab';
+  if(!currentHandleGeo) return;
+  const pos = getCanvasCoords(e);
+  const g = currentHandleGeo;
+  const handleR = 20;
+  const handles = [
+    {x:g.left,  y:g.top,    cursor:'nwse-resize'},
+    {x:g.right, y:g.bottom, cursor:'nwse-resize'},
+    {x:g.right, y:g.top,    cursor:'nesw-resize'},
+    {x:g.left,  y:g.bottom, cursor:'nesw-resize'},
+    {x:g.midX,  y:g.top,    cursor:'ns-resize'},
+    {x:g.midX,  y:g.bottom, cursor:'ns-resize'},
+    {x:g.left,  y:g.midY,   cursor:'ew-resize'},
+    {x:g.right, y:g.midY,   cursor:'ew-resize'}
+  ];
+  const hit = handles.find(h=>Math.hypot(pos.x-h.x, pos.y-h.y) <= handleR);
+  if(hit) canvas.style.cursor = hit.cursor;
+}
+
 canvas.addEventListener('pointerdown', e=>{
   const p = getSelectedPhoto();
   if(!p || !canvas.width) return;
@@ -1817,7 +1839,7 @@ canvas.addEventListener('pointerdown', e=>{
 
   if(cropEditing && currentHandleGeo){
     const g = currentHandleGeo;
-    const handleR = 16;
+    const handleR = 20;
     const points = [
       [g.left, g.top], [g.right, g.top], [g.left, g.bottom], [g.right, g.bottom],
       [g.midX, g.top], [g.midX, g.bottom], [g.left, g.midY], [g.right, g.midY]
@@ -1935,7 +1957,7 @@ canvas.addEventListener('pointermove', e=>{
     applyZoom();
     return;
   }
-  if(cropEditing) return;
+  if(cropEditing){ updateCropCursor(e); return; }
   const p = getSelectedPhoto();
   if(!p){ canvas.classList.remove('cap-hover'); return; }
   const pos = getCanvasCoords(e);
