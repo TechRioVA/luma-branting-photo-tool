@@ -11,7 +11,13 @@
       "src": "photobranding_logo2.png",
       "sizes": "2000x2000",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "photobranding_logo2.png",
+      "sizes": "2000x2000",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
