@@ -1763,6 +1763,8 @@ let captionDrag = {active:false, photoId:null, offsetX:0, offsetY:0};
 let panDrag = {active:false, startX:0, startY:0, startPanX:0, startPanY:0};
 let handleDrag = {active:false, photoId:null, cx:0, cy:0, startDist:0, startZoom:1};
 let cropPanDrag = {active:false, photoId:null, startX:0, startY:0, startOffsetX:0, startOffsetY:0};
+let pinchZoom = {active:false, photoId:null, startDist:0, startZoom:1};
+const activePointers = new Map();
 
 function getCanvasCoords(evt){
   const rect = canvas.getBoundingClientRect();
@@ -1777,6 +1779,21 @@ function getCanvasCoords(evt){
 canvas.addEventListener('pointerdown', e=>{
   const p = getSelectedPhoto();
   if(!p || !canvas.width) return;
+
+  activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+  if(cropEditing && activePointers.size === 2){
+    const pts = Array.from(activePointers.values());
+    pinchZoom.active = true;
+    pinchZoom.photoId = p.id;
+    pinchZoom.startDist = Math.max(1, Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y));
+    pinchZoom.startZoom = p.crop.zoom;
+    handleDrag.active = false;
+    cropPanDrag.active = false;
+    e.preventDefault();
+    return;
+  }
+
   const pos = getCanvasCoords(e);
 
   // Caption dragging, only outside crop-editing mode.
@@ -1833,7 +1850,8 @@ canvas.addEventListener('pointerdown', e=>{
     return;
   }
 
-  if(!cropEditing && pos.x >= 0 && pos.x <= FRAME_W && pos.y >= 0 && pos.y <= FRAME_H){
+  const isFullscreen = document.querySelector('.stage').classList.contains('pseudo-fullscreen');
+  if(!cropEditing && !isFullscreen && pos.x >= 0 && pos.x <= FRAME_W && pos.y >= 0 && pos.y <= FRAME_H){
     // First click on the photo selects it for crop editing, and lets you
     // drag to move it in the very same motion.
     cropEditing = true;
@@ -1864,6 +1882,22 @@ canvas.addEventListener('pointerdown', e=>{
 
 canvas.addEventListener('pointermove', e=>{
   if(!canvas.width) return;
+
+  if(activePointers.has(e.pointerId)){
+    activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  }
+
+  if(pinchZoom.active){
+    const p = photos.find(x=>x.id===pinchZoom.photoId);
+    if(!p || activePointers.size < 2){ return; }
+    const pts = Array.from(activePointers.values());
+    const dist = Math.max(1, Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y));
+    const newZoom = pinchZoom.startZoom * (dist / pinchZoom.startDist);
+    p.crop.zoom = Math.min(CROP_ZOOM_MAX, Math.max(CROP_ZOOM_MIN, newZoom));
+    render();
+    return;
+  }
+
   if(captionDrag.active){
     const p = photos.find(x=>x.id===captionDrag.photoId);
     if(!p) return;
@@ -1913,7 +1947,11 @@ canvas.addEventListener('pointermove', e=>{
   }
 });
 
-window.addEventListener('pointerup', ()=>{
+window.addEventListener('pointerup', e=>{
+  activePointers.delete(e.pointerId);
+  if(pinchZoom.active && activePointers.size < 2){
+    pinchZoom.active = false;
+  }
   if(captionDrag.active){
     captionDrag.active = false;
     canvas.classList.remove('cap-dragging');
