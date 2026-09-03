@@ -438,8 +438,17 @@
   .mobile-fab{display:none;}
   .mobile-ai-fab{display:none;}
   .sheet-backdrop{display:none;}
-  .zip-tip-toast{display:none;}
+    .zip-tip-toast{display:none;}
   .ai-fab-toast{display:none;}
+
+  #photoInfoTooltip{
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease;
+  }
+  #photoInfoTooltip.visible{
+    opacity:1;
+  }
 
   @media (max-width:880px){
     main{
@@ -839,7 +848,7 @@
   <button type="button" id="zipTipClose" aria-label="Dismiss">✕</button>
 </div>
 
-<div id="photoInfoTooltip" style="display:none; position:fixed; width:210px; background:var(--ink); color:#fff; font-size:11.5px; font-weight:500; font-style:normal; line-height:1.4; padding:9px 11px; border-radius:8px; z-index:200;">Delete all photos to reset the Any/Instagram lock.</div>
+<div id="photoInfoTooltip" style="position:fixed; width:210px; background:var(--ink); color:#fff; font-size:11.5px; font-weight:500; font-style:normal; line-height:1.4; padding:9px 11px; border-radius:8px; z-index:200;">Delete all photos to reset the Any/Instagram lock.</div>
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -2221,13 +2230,38 @@ updateModeButtons();
 // instead of being clipped by the scrollable settings panel)
 const photoInfoIconEl = document.getElementById('photoInfoIcon');
 const photoInfoTooltipEl = document.getElementById('photoInfoTooltip');
-photoInfoIconEl.addEventListener('mouseenter', ()=>{
+
+function positionPhotoInfoTooltip(){
   const rect = photoInfoIconEl.getBoundingClientRect();
-  photoInfoTooltipEl.style.left = rect.left + 'px';
+  const tooltipWidth = photoInfoTooltipEl.offsetWidth || 210;
+  let left = rect.right - tooltipWidth;
+  left = Math.max(8, Math.min(left, window.innerWidth - tooltipWidth - 8));
+  photoInfoTooltipEl.style.left = left + 'px';
   photoInfoTooltipEl.style.top = (rect.bottom + 6) + 'px';
-  photoInfoTooltipEl.style.display = 'block';
+}
+function showPhotoInfoTooltip(){
+  positionPhotoInfoTooltip();
+  photoInfoTooltipEl.classList.add('visible');
+}
+function hidePhotoInfoTooltip(){
+  photoInfoTooltipEl.classList.remove('visible');
+}
+
+photoInfoIconEl.addEventListener('mouseenter', showPhotoInfoTooltip);
+photoInfoIconEl.addEventListener('mouseleave', hidePhotoInfoTooltip);
+photoInfoIconEl.addEventListener('click', e=>{
+  e.stopPropagation();
+  if(photoInfoTooltipEl.classList.contains('visible')){
+    hidePhotoInfoTooltip();
+  } else {
+    showPhotoInfoTooltip();
+  }
 });
-photoInfoIconEl.addEventListener('mouseleave', ()=>{ photoInfoTooltipEl.style.display = 'none'; });
+document.addEventListener('click', e=>{
+  if(!photoInfoTooltipEl.contains(e.target) && e.target !== photoInfoIconEl){
+    hidePhotoInfoTooltip();
+  }
+});
 
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(()=>{ render(); });
