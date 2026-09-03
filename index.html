@@ -657,14 +657,15 @@
     </div>
 
     <div class="panel-body">
-    <div class="field">
-      <label>1. Photos</label>
+        <div class="field">
+            <label>1. Photos</label>
       <div class="dropzone" id="photoDrop">
         Click or drop photos here (multiple allowed)
         <input type="file" id="photoInput" accept="image/*" multiple>
       </div>
       <div class="filecount" id="photoCount"></div>
       <div class="photo-list" id="photoList"></div>
+      <button type="button" class="cap-clear" id="clearAllPhotosBtn" style="display:none;">Clear all photos</button>
     </div>
 
     <div class="field">
@@ -675,7 +676,23 @@
         <input type="file" id="logoInput" accept="image/png">
       </div>
       <button type="button" class="cap-clear" id="logoClear" style="display:none;">Clear saved logo</button>
-      <div id="logoWarning" style="display:none; margin-top:8px; font-size:12px; color:#B45309; background:#FEF3E2; border:1px solid #FCD9A8; border-radius:8px; padding:8px 10px;"></div>
+            <div id="logoWarning" style="display:none; margin-top:8px; font-size:12px; color:#B45309; background:#FEF3E2; border:1px solid #FCD9A8; border-radius:8px; padding:8px 10px;"></div>
+    </div>
+
+    <div class="divider"></div>
+
+      <div class="field">
+      <label>Mode</label>
+      <div style="display:flex; border:1.5px solid var(--line); border-radius:10px; overflow:hidden;">
+        <button type="button" class="mode-btn" id="modeAnyBtn" data-mode="any"
+          style="flex:1; padding:10px; border:none; background:var(--tint-purple); color:var(--purple); font-family:'Poppins',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">Any</button>
+        <button type="button" class="mode-btn" id="modeInstagramBtn" data-mode="instagram"
+          style="flex:1; padding:10px; border:none; background:var(--purple); color:#fff; font-family:'Poppins',sans-serif; font-weight:600; font-size:12.5px; cursor:pointer;">Instagram</button>
+      </div>
+            <div id="modeLockedMsg" style="display:none; align-items:center; gap:6px; margin-top:6px; font-size:11px; font-style:italic; color:var(--muted);">
+        <span>Editing already started — switch not available.</span>
+                <span id="photoInfoIcon" style="display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:14px; height:14px; border-radius:50%; background:var(--tint-purple); color:var(--purple); font-size:9px; font-weight:700; font-style:normal; cursor:help;">?</span>
+      </div>
     </div>
 
     <div class="divider"></div>
@@ -822,6 +839,8 @@
   <button type="button" id="zipTipClose" aria-label="Dismiss">✕</button>
 </div>
 
+<div id="photoInfoTooltip" style="display:none; position:fixed; width:210px; background:var(--ink); color:#fff; font-size:11.5px; font-weight:500; font-style:normal; line-height:1.4; padding:9px 11px; border-radius:8px; z-index:200;">Delete all photos to reset the Any/Instagram lock.</div>
+
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -838,6 +857,57 @@ let zoomLevel = 1;    // user-controlled zoom multiplier, always relative to fit
 let baseScale = 1;    // fit-to-screen scale, recomputed on photo change / resize
 let panX = 0;          // pan offset in screen px, applied on top of zoom
 let panY = 0;
+
+// ---------- Any | Instagram mode ----------
+let editMode = 'instagram';  // 'instagram' (default) or 'any'
+let modeLocked = false;      // true once the user changes a setting; see lockModeIfNeeded()
+
+// Locks the mode switch. Called on the first qualifying setting change.
+// Uploading photos alone does NOT call this — see Section 3 of the plan.
+function lockModeIfNeeded(){
+  if(modeLocked) return;
+  modeLocked = true;
+  updateModeButtons();
+}
+
+// Clears the lock. Only called when the photo list becomes fully empty.
+function unlockMode(){
+  modeLocked = false;
+  updateModeButtons();
+}
+
+// Reflects current editMode + modeLocked onto the two toggle buttons:
+// active button highlighted, inactive button grayed out + disabled while locked.
+function updateModeButtons(){
+  const anyBtn = document.getElementById('modeAnyBtn');
+  const instaBtn = document.getElementById('modeInstagramBtn');
+  const lockedMsgEl = document.getElementById('modeLockedMsg');
+  if(!anyBtn || !instaBtn) return;
+
+  [anyBtn, instaBtn].forEach(btn=>{
+    const isActive = btn.dataset.mode === editMode;
+    btn.style.background = isActive ? 'var(--purple)' : 'var(--tint-purple)';
+    btn.style.color = isActive ? '#fff' : 'var(--purple)';
+  });
+
+  const inactiveBtn = editMode === 'any' ? instaBtn : anyBtn;
+  const activeBtn = editMode === 'any' ? anyBtn : instaBtn;
+
+  if(modeLocked){
+    inactiveBtn.disabled = true;
+    inactiveBtn.style.background = '#E4D5E3';
+    inactiveBtn.style.color = '#B9A6B8';
+    inactiveBtn.style.cursor = 'not-allowed';
+    lockedMsgEl.style.display = 'flex';
+  } else {
+    inactiveBtn.disabled = false;
+    inactiveBtn.style.cursor = 'pointer';
+    lockedMsgEl.style.display = 'none';
+  }
+  activeBtn.disabled = false;
+  activeBtn.style.cursor = 'pointer';
+}
+
 
 // ---------- Instagram-safe crop (4:5) ----------
 const FRAME_W = 1080;
@@ -857,19 +927,37 @@ controls.forEach(id=>{
   const valEl = document.getElementById(id+'Val');
   el.addEventListener('input', ()=>{
     valEl.textContent = el.value + (noPercent.includes(id) ? '' : '%');
+    lockModeIfNeeded();
     render();
   });
 });
 
 ['colorPurple','colorTeal','colorOrange','colorGreen','showDots','showLogo','logoBacking'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', render);
-  document.getElementById(id).addEventListener('change', render);
+  document.getElementById(id).addEventListener('input', ()=>{ lockModeIfNeeded(); render(); });
+  document.getElementById(id).addEventListener('change', ()=>{ lockModeIfNeeded(); render(); });
 });
 
 document.getElementById('backingOpacity').addEventListener('input', ()=>{
   document.getElementById('backingOpacityVal').textContent = document.getElementById('backingOpacity').value + '%';
+  lockModeIfNeeded();
   render();
 });
+
+// ---------- Mode toggle button clicks ----------
+document.getElementById('modeAnyBtn').addEventListener('click', ()=>{
+  if(modeLocked || editMode === 'any') return;
+  editMode = 'any';
+  cropEditing = false;
+  updateModeButtons();
+  render();
+});
+document.getElementById('modeInstagramBtn').addEventListener('click', ()=>{
+  if(modeLocked || editMode === 'instagram') return;
+  editMode = 'instagram';
+  updateModeButtons();
+  render();
+});
+
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   controls.forEach(id=>{
@@ -885,6 +973,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   document.getElementById('logoBacking').checked = true;
   document.getElementById('backingOpacity').value = 55;
   document.getElementById('backingOpacityVal').textContent = '55%';
+  lockModeIfNeeded();
   render();
 });
 
@@ -930,20 +1019,25 @@ function updateSelectedCaption(mutator){
 }
 
 captionShowEl.addEventListener('change', ()=>{
+  lockModeIfNeeded();
   updateSelectedCaption(cap=>{ cap.show = captionShowEl.checked; });
 });
 captionTextEl.addEventListener('input', ()=>{
+  lockModeIfNeeded();
   updateSelectedCaption(cap=>{ cap.text = captionTextEl.value; });
 });
 captionSizeEl.addEventListener('input', ()=>{
   captionSizeValEl.textContent = captionSizeEl.value + '%';
+  lockModeIfNeeded();
   updateSelectedCaption(cap=>{ cap.fontSizePct = parseFloat(captionSizeEl.value); });
 });
 captionPaddingEl.addEventListener('input', ()=>{
   captionPaddingValEl.textContent = captionPaddingEl.value + '%';
+  lockModeIfNeeded();
   updateSelectedCaption(cap=>{ cap.paddingScale = parseFloat(captionPaddingEl.value); });
 });
 captionColorEl.addEventListener('input', ()=>{
+  lockModeIfNeeded();
   updateSelectedCaption(cap=>{ cap.color = captionColorEl.value; });
 });
 captionClearEl.addEventListener('click', ()=>{
@@ -1123,6 +1217,7 @@ function refreshPhotoList(){
   const listEl = document.getElementById('photoList');
   const countEl = document.getElementById('photoCount');
   countEl.textContent = photos.length ? (photos.length + (photos.length===1 ? ' photo loaded' : ' photos loaded')) : '';
+  document.getElementById('clearAllPhotosBtn').style.display = photos.length ? 'inline-block' : 'none';
   listEl.innerHTML = '';
   photos.forEach(p=>{
     const div = document.createElement('div');
@@ -1133,17 +1228,14 @@ function refreshPhotoList(){
     const rm = document.createElement('div');
     rm.className = 'rm';
     rm.textContent = '×';
-    rm.addEventListener('click', e=>{
+        rm.addEventListener('click', e=>{
       e.stopPropagation();
       photos = photos.filter(x=>x.id !== p.id);
       if(selectedId === p.id){ selectedId = photos.length ? photos[0].id : null; cropEditing = false; }
       refreshPhotoList();
       downloadAllBtn.disabled = photos.length < 2;
       if(!photos.length){
-        canvasWrap.style.display = 'none';
-        zoomBar.style.display = 'none';
-        emptyState.style.display = 'block';
-        downloadBtn.disabled = true;
+        resetToEmptyState();
       } else {
         syncCaptionControls();
         render();
@@ -1243,6 +1335,17 @@ function slideToPhoto(newId, direction){
 
 document.getElementById('stagePrevBtn').addEventListener('click', ()=>navigatePhoto(-1));
 document.getElementById('stageNextBtn').addEventListener('click', ()=>navigatePhoto(1));
+
+document.getElementById('clearAllPhotosBtn').addEventListener('click', ()=>{
+  if(!photos.length) return;
+  const ok = window.confirm('Are you sure you want to remove all photos?');
+  if(!ok) return;
+  photos = [];
+  selectedId = null;
+  cropEditing = false;
+  refreshPhotoList();
+  resetToEmptyState();
+});
 
 // ---------- Logo upload ----------
 const LOGO_STORAGE_KEY = 'luma-saved-logo';
@@ -1562,6 +1665,97 @@ function drawBrandedPhoto(targetCanvas, photo){
   drawFrameContent(c, photo, 0, 0);
 }
 
+// ---------- Any mode drawing (restored from Aug 28 backup) ----------
+// Canvas size = the photo's own natural dimensions. No crop, no fixed frame,
+// no frame origin offset — border/dots/logo/caption drawn straight against
+// the photo's real pixel size. Kept separate from drawBrandedPhoto (frame
+// version) so both can coexist without naming collisions.
+function drawAnyModePhoto(targetCanvas, photo){
+  const img = photo.img;
+  const caption = photo.caption;
+  const c = targetCanvas.getContext('2d');
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  targetCanvas.width = w;
+  targetCanvas.height = h;
+
+  c.clearRect(0,0,w,h);
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(img, 0, 0, w, h);
+
+  const base = Math.min(w,h);
+  const marginPct = parseFloat(document.getElementById('margin').value)/100;
+  const armPct = parseFloat(document.getElementById('armLength').value)/100;
+  const lineW = parseFloat(document.getElementById('lineWidth').value)/1000 * base;
+  const dotR = parseFloat(document.getElementById('dotSize').value)/1000 * base;
+  const logoPct = parseFloat(document.getElementById('logoSize').value)/100;
+
+  const margin = base * marginPct;
+  const armW = w * armPct;
+  const armH = h * armPct;
+
+  const purple = document.getElementById('colorPurple').value;
+  const teal = document.getElementById('colorTeal').value;
+  const orange = document.getElementById('colorOrange').value;
+  const green = document.getElementById('colorGreen').value;
+
+  c.strokeStyle = purple;
+  c.lineWidth = lineW;
+  c.lineCap = 'butt';
+
+  c.beginPath();
+  c.moveTo(margin, margin + armH);
+  c.lineTo(margin, margin);
+  c.lineTo(margin + armW, margin);
+  c.stroke();
+
+  c.beginPath();
+  c.moveTo(w - margin - armW, h - margin);
+  c.lineTo(w - margin, h - margin);
+  c.lineTo(w - margin, h - margin - armH);
+  c.stroke();
+
+  if(document.getElementById('showDots').checked){
+    const dotOffsetPct = parseFloat(document.getElementById('dotOffset').value)/100;
+    const dotY = margin + lineW*1.6 + dotR;
+    const startX = margin + dotR*1.4 + (w * dotOffsetPct);
+    const gap = dotR * 2.6;
+    drawDot(c, startX, dotY, dotR, teal);
+    drawDot(c, startX + gap, dotY, dotR, orange);
+    drawDot(c, startX + gap*2, dotY, dotR, green);
+  }
+
+  if(document.getElementById('showLogo').checked && logoImg){
+    const logoW = w * logoPct;
+    const logoH = logoW * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const pad = margin + lineW*2;
+    const lx = w - pad - logoW;
+    const ly = h - pad - logoH;
+
+    if(document.getElementById('logoBacking').checked){
+      const opacity = parseFloat(document.getElementById('backingOpacity').value)/100;
+      const platePadX = base * 0.014;
+      const platePadY = base * 0.006;
+      const plateR = Math.min(logoH * 0.35, base * 0.02);
+      const plateColor = 'rgba(20,12,24,' + opacity + ')';
+      c.save();
+      c.shadowColor = plateColor;
+      c.shadowBlur = base * 0.012;
+      c.fillStyle = plateColor;
+      roundedRect(c, lx - platePadX, ly - platePadY, logoW + platePadX*2, logoH + platePadY*2, plateR);
+      c.fill();
+      c.restore();
+    }
+
+    c.drawImage(logoImg, lx, ly, logoW, logoH);
+  }
+
+  if(caption){
+    drawCaption(c, w, h, base, caption);
+  }
+}
+
 // Editing render: canvas is padded so the photo can extend past the frame and
 // the 8 handles stay visible/clickable, with everything outside the frame dimmed.
 function drawCropEditingView(targetCanvas, photo){
@@ -1639,10 +1833,26 @@ function getSelectedPhoto(){
   return photos.find(p=>p.id === selectedId) || null;
 }
 
+// Returns the canvas/stage/UI to the empty state and resets the mode lock.
+// Called both when the last photo is deleted manually and when "Clear all" is used.
+function resetToEmptyState(){
+  canvasWrap.style.display = 'none';
+  zoomBar.style.display = 'none';
+  emptyState.style.display = 'block';
+  downloadBtn.disabled = true;
+  downloadAllBtn.disabled = true;
+  document.getElementById('clearAllPhotosBtn').style.display = 'none';
+  unlockMode();
+}
+
 function render(){
   const p = getSelectedPhoto();
   if(!p) return;
-  if(cropEditing){
+  if(editMode === 'any'){
+    currentHandleGeo = null;
+    canvas.style.cursor = '';
+    drawAnyModePhoto(canvas, p);
+  } else if(cropEditing){
     currentHandleGeo = drawCropEditingView(canvas, p);
   } else {
     currentHandleGeo = null;
@@ -1753,7 +1963,7 @@ document.addEventListener('keydown', e=>{
       document.body.style.overflow = '';
       setTimeout(fitCanvasToStage, 30);
     }
-    if(cropEditing){
+        if(editMode !== 'any' && cropEditing){
       cropEditing = false;
       render();
     }
@@ -1806,7 +2016,8 @@ canvasWrap.addEventListener('pointerdown', e=>{
 
   activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
 
-  if(cropEditing && activePointers.size === 2){
+  if(editMode !== 'any' && cropEditing && activePointers.size === 2){
+    lockModeIfNeeded();
     const pts = Array.from(activePointers.values());
     pinchZoom.active = true;
     pinchZoom.photoId = p.id;
@@ -1820,12 +2031,13 @@ canvasWrap.addEventListener('pointerdown', e=>{
 
   const pos = getCanvasCoords(e);
 
-  // Caption dragging, only outside crop-editing mode.
-  if(!cropEditing){
-    const base = Math.min(FRAME_W, FRAME_H);
-    const layout = getCaptionLayout(ctx, FRAME_W, FRAME_H, base, p.caption);
+    // Caption dragging, only outside crop-editing mode.
+  if(editMode === 'any' || !cropEditing){
+    const base = Math.min(canvas.width, canvas.height);
+    const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
     const hitCaption = layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH;
     if(hitCaption){
+      lockModeIfNeeded();
       captionDrag.active = true;
       captionDrag.photoId = p.id;
       captionDrag.offsetX = pos.x - (layout.boxX + layout.boxW/2);
@@ -1838,7 +2050,7 @@ canvasWrap.addEventListener('pointerdown', e=>{
     }
   }
 
-  if(cropEditing && currentHandleGeo){
+    if(editMode !== 'any' && cropEditing && currentHandleGeo){
     const g = currentHandleGeo;
     const handleR = 20;
     const points = [
@@ -1847,6 +2059,7 @@ canvasWrap.addEventListener('pointerdown', e=>{
     ];
     const hitHandle = points.find(([hx,hy])=> Math.hypot(pos.x-hx, pos.y-hy) <= handleR);
     if(hitHandle){
+      lockModeIfNeeded();
       const geo = computeCropGeometry(p);
       handleDrag.active = true;
       handleDrag.photoId = p.id;
@@ -1859,6 +2072,7 @@ canvasWrap.addEventListener('pointerdown', e=>{
       return;
     }
     if(pos.x >= g.left && pos.x <= g.right && pos.y >= g.top && pos.y <= g.bottom){
+      lockModeIfNeeded();
       cropPanDrag.active = true;
       cropPanDrag.photoId = p.id;
       cropPanDrag.startX = pos.x;
@@ -1875,9 +2089,10 @@ canvasWrap.addEventListener('pointerdown', e=>{
   }
 
   const isFullscreen = document.querySelector('.stage').classList.contains('pseudo-fullscreen');
-  if(!cropEditing && !isFullscreen && pos.x >= 0 && pos.x <= FRAME_W && pos.y >= 0 && pos.y <= FRAME_H){
+  if(editMode !== 'any' && !cropEditing && !isFullscreen && pos.x >= 0 && pos.x <= FRAME_W && pos.y >= 0 && pos.y <= FRAME_H){
     // First click on the photo selects it for crop editing, and lets you
     // drag to move it in the very same motion.
+    lockModeIfNeeded();
     cropEditing = true;
     render();
     const newPos = getCanvasCoords(e);
@@ -1923,14 +2138,14 @@ canvasWrap.addEventListener('pointermove', e=>{
     return;
   }
 
-  if(captionDrag.active){
+    if(captionDrag.active){
     const p = photos.find(x=>x.id===captionDrag.photoId);
     if(!p) return;
     const pos = getCanvasCoords(e);
     const newCx = pos.x - captionDrag.offsetX;
     const newCy = pos.y - captionDrag.offsetY;
-    p.caption.x = Math.min(1, Math.max(0, newCx / FRAME_W));
-    p.caption.y = Math.min(1, Math.max(0, newCy / FRAME_H));
+    p.caption.x = Math.min(1, Math.max(0, newCx / canvas.width));
+    p.caption.y = Math.min(1, Math.max(0, newCy / canvas.height));
     render();
     return;
   }
@@ -1959,12 +2174,12 @@ canvasWrap.addEventListener('pointermove', e=>{
     applyZoom();
     return;
   }
-  if(cropEditing){ updateCropCursor(e); return; }
+  if(editMode !== 'any' && cropEditing){ updateCropCursor(e); return; }
   const p = getSelectedPhoto();
   if(!p){ canvas.classList.remove('cap-hover'); return; }
   const pos = getCanvasCoords(e);
-  const base = Math.min(FRAME_W, FRAME_H);
-  const layout = getCaptionLayout(ctx, FRAME_W, FRAME_H, base, p.caption);
+  const base = Math.min(canvas.width, canvas.height);
+  const layout = getCaptionLayout(ctx, canvas.width, canvas.height, base, p.caption);
   if(layout && pos.x >= layout.boxX && pos.x <= layout.boxX+layout.boxW && pos.y >= layout.boxY && pos.y <= layout.boxY+layout.boxH){
     canvas.classList.add('cap-hover');
   } else {
@@ -1994,11 +2209,25 @@ window.addEventListener('pointerup', e=>{
 });
 
 document.addEventListener('pointerdown', e=>{
-  if(cropEditing && !canvasWrap.contains(e.target)){
+  if(editMode !== 'any' && cropEditing && !canvasWrap.contains(e.target)){
     cropEditing = false;
     render();
   }
 });
+
+updateModeButtons();
+
+// Photos section "?" info icon tooltip (fixed-position, so it floats above the canvas
+// instead of being clipped by the scrollable settings panel)
+const photoInfoIconEl = document.getElementById('photoInfoIcon');
+const photoInfoTooltipEl = document.getElementById('photoInfoTooltip');
+photoInfoIconEl.addEventListener('mouseenter', ()=>{
+  const rect = photoInfoIconEl.getBoundingClientRect();
+  photoInfoTooltipEl.style.left = rect.left + 'px';
+  photoInfoTooltipEl.style.top = (rect.bottom + 6) + 'px';
+  photoInfoTooltipEl.style.display = 'block';
+});
+photoInfoIconEl.addEventListener('mouseleave', ()=>{ photoInfoTooltipEl.style.display = 'none'; });
 
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(()=>{ render(); });
@@ -2014,7 +2243,11 @@ downloadBtn.addEventListener('click', ()=>{
   const p = getSelectedPhoto();
   if(!p) return;
   const off = document.createElement('canvas');
-  drawBrandedPhoto(off, p);
+  if(editMode === 'any'){
+    drawAnyModePhoto(off, p);
+  } else {
+    drawBrandedPhoto(off, p);
+  }
   off.toBlob(blob=>{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2032,7 +2265,11 @@ downloadAllBtn.addEventListener('click', async ()=>{
   const zip = new JSZip();
   for(const p of photos){
     const off = document.createElement('canvas');
-    drawBrandedPhoto(off, p);
+    if(editMode === 'any'){
+      drawAnyModePhoto(off, p);
+    } else {
+      drawBrandedPhoto(off, p);
+    }
     const blob = await new Promise(res=>off.toBlob(res, 'image/png'));
     zip.file(baseName(p.name) + '-branded.png', blob);
   }
