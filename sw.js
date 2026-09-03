@@ -1,4 +1,4 @@
-const CACHE_NAME = 'luma-branding-v2';
+const CACHE_NAME = 'luma-branding-v3';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -34,6 +34,19 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        // Got a fresh copy from the network — save it to the cache
+        // so it's available next time we're offline.
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        // No internet — fall back to whatever we have cached.
+        return caches.match(event.request);
+      })
   );
 });
