@@ -63,3 +63,10 @@ Once installed, it opens in its own standalone window (no browser address bar) w
 ## Status
 
 Actively tweaked for personal use — settings and layout may change as I keep refining my own workflow and learning as I go.
+
+
+## New Update: September 3, 2026
+* Added an "Any | Instagram" mode — switch between branding photos at their original size (no cropping) or the Instagram-safe 4:5 crop frame
+* The mode switch locks once you start editing, so you don't accidentally reset your work — a small info tooltip explains how to unlock it
+* Added a "Clear all photos" button (with a confirmation prompt) to quickly start over
+* Fixed a mobile bug where the info tooltip got cut off on smaller screens — it now stays fully visible, fades in/out smoothly, and works with tap instead of hover
