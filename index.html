@@ -408,6 +408,130 @@
     padding:0 4px;
   }
   .filecount{font-size:12px;color:var(--muted); margin-top:6px; font-weight:600;}
+    #lumaFilesBtn{
+    position:fixed;
+    top:50%;
+    right:0;
+    transform:translateY(-50%) translateX(38px);
+    z-index:150;
+    width:48px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--purple-dark);
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,.4);
+    border-right:none;
+    border-radius:12px 0 0 12px;
+    font-size:18px;
+    cursor:pointer;
+    box-shadow:-4px 0 14px rgba(43,15,45,.25);
+    transition:transform .25s ease;
+  }
+  #lumaFilesBtn:hover{
+    transform:translateY(-50%) translateX(0);
+  }
+  @media (max-width:880px){
+    #lumaFilesBtn{display:none !important;}
+  }
+  .luma-modal-backdrop{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(24,12,26,.55);
+    z-index:500;
+    align-items:center;
+    justify-content:center;
+  }
+  .luma-modal-backdrop.visible{display:flex;}
+  .luma-modal{
+    background:var(--panel);
+    border-radius:16px;
+    padding:26px;
+    width:360px;
+    max-width:92vw;
+    max-height:85vh;
+    overflow-y:auto;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  .luma-modal h3{
+    font-family:'Poppins',sans-serif;
+    margin:0 0 14px;
+    color:var(--ink);
+    font-size:16px;
+  }
+  .luma-modal input[type=password],
+  .luma-modal input[type=email],
+  .luma-modal input[type=text]{
+    width:100%;
+    padding:10px 12px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    font-size:14px;
+    margin-bottom:10px;
+    font-family:'Nunito Sans',sans-serif;
+    box-sizing:border-box;
+  }
+  .luma-modal-error{
+    display:none;
+    font-size:12px;
+    color:#B45309;
+    background:#FEF3E2;
+    border:1px solid #FCD9A8;
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:10px;
+  }
+  .luma-modal-close{
+    position:absolute;
+    top:14px; right:16px;
+    background:none; border:none;
+    font-size:18px; cursor:pointer;
+    color:var(--muted);
+  }
+  .luma-modal{position:relative;}
+  .luma-file-card{
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .luma-file-card .lf-title{
+    font-family:'Poppins',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink);
+    margin-bottom:4px;
+  }
+  .luma-file-card .lf-status{
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:10px;
+    word-break:break-all;
+    line-height:1.4;
+  }
+  .luma-file-card .lf-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .luma-file-card .lf-actions button{
+    flex:1;
+    min-width:80px;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    font-family:'Poppins',sans-serif;
+    font-weight:600;
+    font-size:11.5px;
+    cursor:pointer;
+  }
+  .lf-btn-upload{background:var(--tint-purple); color:var(--purple);}
+  .lf-btn-download{background:var(--tint-blue); color:#2B5C7E;}
+  .lf-btn-delete{background:#FCE4E4; color:#B3261E;}
+  .lf-btn-upload:disabled, .lf-btn-download:disabled, .lf-btn-delete:disabled{
+    opacity:.45; cursor:not-allowed;
+  }
 
     .stage-nav{
     display:none;
@@ -657,6 +781,13 @@
   </div>
 </header>
 
+<button type="button" id="lumaFilesBtn">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="11" width="14" height="10" rx="2" stroke="white" stroke-width="2"/>
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="white" stroke-width="2"/>
+  </svg>
+</button>
+
 <main>
   <div class="panel">
 
@@ -849,6 +980,78 @@
 </div>
 
 <div id="photoInfoTooltip" style="position:fixed; width:210px; background:var(--ink); color:#fff; font-size:11.5px; font-weight:500; font-style:normal; line-height:1.4; padding:9px 11px; border-radius:8px; z-index:200;">Delete all photos to reset the Any/Instagram lock.</div>
+
+<div class="luma-modal-backdrop" id="lumaModalBackdrop">
+  <div class="luma-modal" id="lumaPasscodeModal">
+    <button type="button" class="luma-modal-close" id="lumaPasscodeCloseBtn">✕</button>
+    <h3>Enter Passcode</h3>
+    <div class="luma-modal-error" id="lumaPasscodeError"></div>
+    <input type="password" id="lumaPasscodeInput" placeholder="Passcode">
+    <button type="button" class="btn btn-primary" id="lumaPasscodeSubmitBtn">Unlock</button>
+    <a href="#" id="lumaForgotLink" style="display:block; margin-top:10px; text-align:center; font-style:italic; color:var(--purple); font-size:12px; text-decoration:none;">Forgot passcode?</a>
+  </div>
+
+  <div class="luma-modal" id="lumaFilesModal" style="display:none;">
+    <button type="button" class="luma-modal-close" id="lumaFilesCloseBtn">✕</button>
+    <h3>LUMA AI System Files</h3>
+    <div id="lumaFileCardWorkingStack" class="luma-file-card">
+      <div class="lf-title">Updated LUMA Content Helper Stack</div>
+      <div class="lf-status" id="lfStatusWorkingStack">Loading…</div>
+      <div class="lf-actions">
+        <button type="button" class="lf-btn-upload" data-folder="workingStack" data-action="upload">Upload</button>
+        <button type="button" class="lf-btn-download" data-folder="workingStack" data-action="download">Download</button>
+        <button type="button" class="lf-btn-delete" data-folder="workingStack" data-action="delete">Delete</button>
+      </div>
+    </div>
+        <div id="lumaFileCardQaLab" class="luma-file-card">
+      <div class="lf-title">QA Lab Last Testing and Development Stack</div>
+      <div class="lf-status" id="lfStatusQaLab">Loading…</div>
+      <div class="lf-actions">
+        <button type="button" class="lf-btn-upload" data-folder="qaLab" data-action="upload">Upload</button>
+        <button type="button" class="lf-btn-download" data-folder="qaLab" data-action="download">Download</button>
+        <button type="button" class="lf-btn-delete" data-folder="qaLab" data-action="delete">Delete</button>
+      </div>
+    </div>
+    <div id="lumaFileCardLumaCore" class="luma-file-card">
+      <div class="lf-title">LUMA AI CORE</div>
+      <div class="lf-status" id="lfStatusLumaCore">Loading…</div>
+      <div class="lf-actions">
+        <button type="button" class="lf-btn-upload" data-folder="lumaCore" data-action="upload">Upload</button>
+        <button type="button" class="lf-btn-download" data-folder="lumaCore" data-action="download">Download</button>
+        <button type="button" class="lf-btn-delete" data-folder="lumaCore" data-action="delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="luma-modal" id="lumaResetModal" style="display:none;">
+    <button type="button" class="luma-modal-close" id="lumaResetCloseBtn">✕</button>
+    <h3>Reset Passcode</h3>
+    <div class="luma-modal-error" id="lumaResetError"></div>
+
+    <div id="lumaResetStepEmail">
+      <input type="email" id="lumaResetEmailInput" placeholder="Your email address">
+      <button type="button" class="btn btn-primary" id="lumaResetSendCodeBtn">Send Reset Code</button>
+    </div>
+
+    <div id="lumaResetStepCode" style="display:none;">
+      <input type="text" id="lumaResetOtpInput" placeholder="6-digit code">
+      <button type="button" class="btn btn-primary" id="lumaResetVerifyOtpBtn">Verify Code</button>
+    </div>
+
+    <div id="lumaResetStepNewPasscode" style="display:none;">
+      <input type="password" id="lumaResetNewPasscodeInput" placeholder="New passcode">
+      <input type="password" id="lumaResetConfirmPasscodeInput" placeholder="Confirm new passcode">
+      <button type="button" class="btn btn-primary" id="lumaResetConfirmBtn">Reset Passcode</button>
+    </div>
+  </div>
+
+  <div class="luma-modal" id="lumaResetSuccessModal" style="display:none;">
+    <h3>Passcode Reset</h3>
+    <p style="font-size:13.5px; color:var(--ink); line-height:1.5; margin:0 0 18px;">Passcode has been reset successfully. You can now unlock with your new passcode.</p>
+    <button type="button" class="btn btn-primary" id="lumaResetSuccessOkBtn">OK</button>
+  </div>
+</div>
+<input type="file" id="lumaHiddenFileInput" style="display:none;">
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -2398,6 +2601,376 @@ allSliders.forEach(slider=>{
   slider.addEventListener('pointerdown', ()=>{ panelEl.classList.add('previewing'); });
 });
 window.addEventListener('pointerup', ()=>{ panelEl.classList.remove('previewing'); });
+
+// ---------- LUMA AI Files (restricted section) ----------
+const LUMA_FILES_API_URL = 'https://script.google.com/macros/s/AKfycbwB6CysNguWb8ZW7QvPcAyK_vMzGV40Wwd598w3Xk5Yn7HVwBl6adnIRU84A_14XzBx/exec';
+
+let lumaCurrentPasscode = null; // held in memory only while the modal session is open
+let lumaPendingUploadFolder = null;
+
+const lumaFilesBtn = document.getElementById('lumaFilesBtn');
+const lumaModalBackdrop = document.getElementById('lumaModalBackdrop');
+const lumaPasscodeModal = document.getElementById('lumaPasscodeModal');
+const lumaFilesModal = document.getElementById('lumaFilesModal');
+const lumaPasscodeInput = document.getElementById('lumaPasscodeInput');
+const lumaPasscodeError = document.getElementById('lumaPasscodeError');
+const lumaHiddenFileInput = document.getElementById('lumaHiddenFileInput');
+
+const lumaForgotLink = document.getElementById('lumaForgotLink');
+const lumaResetModal = document.getElementById('lumaResetModal');
+const lumaResetCloseBtn = document.getElementById('lumaResetCloseBtn');
+const lumaResetError = document.getElementById('lumaResetError');
+const lumaResetStepEmail = document.getElementById('lumaResetStepEmail');
+const lumaResetStepCode = document.getElementById('lumaResetStepCode');
+const lumaResetEmailInput = document.getElementById('lumaResetEmailInput');
+const lumaResetSendCodeBtn = document.getElementById('lumaResetSendCodeBtn');
+const lumaResetOtpInput = document.getElementById('lumaResetOtpInput');
+const lumaResetNewPasscodeInput = document.getElementById('lumaResetNewPasscodeInput');
+const lumaResetConfirmPasscodeInput = document.getElementById('lumaResetConfirmPasscodeInput');
+const lumaResetConfirmBtn = document.getElementById('lumaResetConfirmBtn');
+let lumaResetEmail = '';
+
+lumaForgotLink.addEventListener('click', e=>{
+  e.preventDefault();
+  lumaResetError.style.display = 'none';
+  lumaResetEmailInput.value = '';
+  lumaResetOtpInput.value = '';
+  lumaResetNewPasscodeInput.value = '';
+  lumaResetConfirmPasscodeInput.value = '';
+  lumaVerifiedOtp = '';
+  lumaResetStepEmail.style.display = 'block';
+  lumaResetStepCode.style.display = 'none';
+  lumaResetStepNewPasscode.style.display = 'none';
+  lumaPasscodeModal.style.display = 'none';
+  lumaResetModal.style.display = 'block';
+});
+
+lumaResetCloseBtn.addEventListener('click', ()=>{
+  lumaResetModal.style.display = 'none';
+  lumaModalBackdrop.classList.remove('visible');
+});
+
+lumaResetSendCodeBtn.addEventListener('click', async ()=>{
+  const email = lumaResetEmailInput.value.trim();
+  if(!email) return;
+  lumaResetError.style.display = 'none';
+  lumaResetSendCodeBtn.disabled = true;
+  lumaResetSendCodeBtn.textContent = 'Sending…';
+  try{
+    const result = await lumaCallApi({ action: 'requestPasscodeReset', email: email });
+    if(result.ok){
+      lumaResetEmail = email;
+      lumaResetStepEmail.style.display = 'none';
+      lumaResetStepCode.style.display = 'block';
+    } else {
+      lumaResetError.textContent = result.error || 'Could not send code.';
+      lumaResetError.style.display = 'block';
+    }
+  }catch(err){
+    lumaResetError.textContent = 'Could not reach the server. Try again.';
+    lumaResetError.style.display = 'block';
+  }finally{
+    lumaResetSendCodeBtn.disabled = false;
+    lumaResetSendCodeBtn.textContent = 'Send Reset Code';
+  }
+});
+
+const lumaResetStepNewPasscode = document.getElementById('lumaResetStepNewPasscode');
+const lumaResetVerifyOtpBtn = document.getElementById('lumaResetVerifyOtpBtn');
+const lumaResetSuccessModal = document.getElementById('lumaResetSuccessModal');
+const lumaResetSuccessOkBtn = document.getElementById('lumaResetSuccessOkBtn');
+let lumaVerifiedOtp = ''; // holds the OTP once verified, so the final Reset step can reuse it
+
+lumaResetVerifyOtpBtn.addEventListener('click', async ()=>{
+  const otp = lumaResetOtpInput.value.trim();
+  lumaResetError.style.display = 'none';
+
+  if(!otp){
+    lumaResetError.textContent = 'Please enter the code.';
+    lumaResetError.style.display = 'block';
+    return;
+  }
+
+  lumaResetVerifyOtpBtn.disabled = true;
+  lumaResetVerifyOtpBtn.textContent = 'Verifying…';
+  try{
+    const result = await lumaCallApi({
+      action: 'verifyResetOtp',
+      email: lumaResetEmail,
+      otp: otp
+    });
+    if(result.ok){
+      lumaVerifiedOtp = otp;
+      lumaResetStepCode.style.display = 'none';
+      lumaResetStepNewPasscode.style.display = 'block';
+    } else {
+      lumaResetError.textContent = result.error || 'Incorrect code.';
+      lumaResetError.style.display = 'block';
+    }
+  }catch(err){
+    lumaResetError.textContent = 'Could not reach the server. Try again.';
+    lumaResetError.style.display = 'block';
+  }finally{
+    lumaResetVerifyOtpBtn.disabled = false;
+    lumaResetVerifyOtpBtn.textContent = 'Verify Code';
+  }
+});
+
+lumaResetConfirmBtn.addEventListener('click', async ()=>{
+  const newPass = lumaResetNewPasscodeInput.value;
+  const confirmPass = lumaResetConfirmPasscodeInput.value;
+  lumaResetError.style.display = 'none';
+
+  if(!newPass || !confirmPass){
+    lumaResetError.textContent = 'Please fill in all fields.';
+    lumaResetError.style.display = 'block';
+    return;
+  }
+  if(newPass !== confirmPass){
+    lumaResetError.textContent = 'New passcodes do not match.';
+    lumaResetError.style.display = 'block';
+    return;
+  }
+
+  lumaResetConfirmBtn.disabled = true;
+  lumaResetConfirmBtn.textContent = 'Resetting…';
+  try{
+    const result = await lumaCallApi({
+      action: 'confirmPasscodeReset',
+      email: lumaResetEmail,
+      otp: lumaVerifiedOtp,
+      newPasscode: newPass
+    });
+    if(result.ok){
+      lumaResetModal.style.display = 'none';
+      lumaResetSuccessModal.style.display = 'block';
+    } else {
+      lumaResetError.textContent = result.error || 'Could not reset passcode.';
+      lumaResetError.style.display = 'block';
+    }
+  }catch(err){
+    lumaResetError.textContent = 'Could not reach the server. Try again.';
+    lumaResetError.style.display = 'block';
+  }finally{
+    lumaResetConfirmBtn.disabled = false;
+    lumaResetConfirmBtn.textContent = 'Reset Passcode';
+  }
+});
+
+lumaResetSuccessOkBtn.addEventListener('click', ()=>{
+  lumaResetSuccessModal.style.display = 'none';
+  lumaModalBackdrop.classList.remove('visible');
+});
+
+lumaFilesBtn.addEventListener('click', ()=>{
+  if(lumaCurrentPasscode){
+    // Already unlocked earlier this session — skip straight to the files list.
+    lumaPasscodeModal.style.display = 'none';
+    lumaFilesModal.style.display = 'block';
+    lumaModalBackdrop.classList.add('visible');
+    lumaLoadFileList();
+    return;
+  }
+  lumaPasscodeInput.value = '';
+  lumaPasscodeError.style.display = 'none';
+  lumaPasscodeModal.style.display = 'block';
+  lumaFilesModal.style.display = 'none';
+  lumaModalBackdrop.classList.add('visible');
+  lumaPasscodeInput.focus();
+});
+
+function lumaCloseAllModals(){
+  lumaModalBackdrop.classList.remove('visible');
+  // lumaCurrentPasscode is intentionally NOT cleared here, so the passcode
+  // stays remembered for the rest of this tab's session (until refresh/close).
+}
+
+document.getElementById('lumaPasscodeCloseBtn').addEventListener('click', lumaCloseAllModals);
+document.getElementById('lumaFilesCloseBtn').addEventListener('click', lumaCloseAllModals);
+lumaModalBackdrop.addEventListener('click', e=>{
+  if(e.target === lumaModalBackdrop) lumaCloseAllModals();
+});
+
+async function lumaCallApi(payload){
+  const response = await fetch(LUMA_FILES_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  });
+  return response.json();
+}
+
+document.getElementById('lumaPasscodeSubmitBtn').addEventListener('click', async ()=>{
+  const typed = lumaPasscodeInput.value;
+  if(!typed) return;
+  lumaPasscodeError.style.display = 'none';
+  const btn = document.getElementById('lumaPasscodeSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  try{
+    const result = await lumaCallApi({ action: 'checkPasscode', passcode: typed });
+    if(result.ok){
+      lumaCurrentPasscode = typed;
+      lumaPasscodeModal.style.display = 'none';
+      lumaFilesModal.style.display = 'block';
+      lumaLoadFileList();
+    } else {
+      lumaPasscodeError.textContent = result.error || 'Incorrect passcode.';
+      lumaPasscodeError.style.display = 'block';
+    }
+  }catch(err){
+    lumaPasscodeError.textContent = 'Could not reach the server. Try again.';
+    lumaPasscodeError.style.display = 'block';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Unlock';
+  }
+});
+
+lumaPasscodeInput.addEventListener('keydown', e=>{
+  if(e.key === 'Enter') document.getElementById('lumaPasscodeSubmitBtn').click();
+});
+
+function lumaFormatBytes(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+async function lumaLoadFileList(){
+  document.getElementById('lfStatusWorkingStack').textContent = 'Loading…';
+  document.getElementById('lfStatusQaLab').textContent = 'Loading…';
+  document.getElementById('lfStatusLumaCore').textContent = 'Loading…';
+  try{
+    const result = await lumaCallApi({ action: 'listFiles', passcode: lumaCurrentPasscode });
+    if(!result.ok){
+      document.getElementById('lfStatusWorkingStack').textContent = 'Error loading.';
+      document.getElementById('lfStatusQaLab').textContent = 'Error loading.';
+      document.getElementById('lfStatusLumaCore').textContent = 'Error loading.';
+      return;
+    }
+    lumaRenderFileStatus('workingStack', result.files.workingStack);
+    lumaRenderFileStatus('qaLab', result.files.qaLab);
+    lumaRenderFileStatus('lumaCore', result.files.lumaCore);
+  }catch(err){
+    document.getElementById('lfStatusWorkingStack').textContent = 'Could not reach server.';
+    document.getElementById('lfStatusQaLab').textContent = 'Could not reach server.';
+    document.getElementById('lfStatusLumaCore').textContent = 'Could not reach server.';
+  }
+}
+
+const LUMA_FOLDER_ELEMENTS = {
+  workingStack: { statusId: 'lfStatusWorkingStack', cardId: 'lumaFileCardWorkingStack' },
+  qaLab: { statusId: 'lfStatusQaLab', cardId: 'lumaFileCardQaLab' },
+  lumaCore: { statusId: 'lfStatusLumaCore', cardId: 'lumaFileCardLumaCore' }
+};
+
+function lumaRenderFileStatus(folderKey, fileInfo){
+  const refs = LUMA_FOLDER_ELEMENTS[folderKey];
+  if(!refs) return;
+  const statusEl = document.getElementById(refs.statusId);
+  const card = document.getElementById(refs.cardId);
+  const downloadBtn = card.querySelector('[data-action="download"]');
+  const deleteBtn = card.querySelector('[data-action="delete"]');
+
+  if(fileInfo){
+    statusEl.textContent = fileInfo.fileName + ' — ' + lumaFormatBytes(fileInfo.size);
+    downloadBtn.disabled = false;
+    deleteBtn.disabled = false;
+  } else {
+    statusEl.textContent = 'No file uploaded yet.';
+    downloadBtn.disabled = true;
+    deleteBtn.disabled = true;
+  }
+}
+
+document.querySelectorAll('.lf-actions button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const folderKey = btn.dataset.folder;
+    const action = btn.dataset.action;
+    if(action === 'upload') lumaStartUpload(folderKey);
+    else if(action === 'download') lumaStartDownload(folderKey);
+    else if(action === 'delete') lumaStartDelete(folderKey);
+  });
+});
+
+function lumaStartUpload(folderKey){
+  lumaPendingUploadFolder = folderKey;
+  lumaHiddenFileInput.value = '';
+  lumaHiddenFileInput.click();
+}
+
+lumaHiddenFileInput.addEventListener('change', async ()=>{
+  window.focus();
+  const file = lumaHiddenFileInput.files[0];
+  if(!file || !lumaPendingUploadFolder) return;
+  const folderKey = lumaPendingUploadFolder;
+  const statusEl = document.getElementById(LUMA_FOLDER_ELEMENTS[folderKey].statusId);
+  statusEl.textContent = 'Uploading…';
+
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    const base64Data = reader.result.split(',')[1];
+    try{
+      const result = await lumaCallApi({
+        action: 'uploadFile',
+        passcode: lumaCurrentPasscode,
+        folderKey: folderKey,
+        fileName: file.name,
+        base64Data: base64Data,
+        mimeType: file.type || 'application/octet-stream'
+      });
+      if(result.ok){
+        lumaLoadFileList();
+      } else {
+        statusEl.textContent = 'Upload failed: ' + (result.error || 'unknown error');
+      }
+    }catch(err){
+      statusEl.textContent = 'Upload failed: could not reach server.';
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+async function lumaStartDownload(folderKey){
+  try{
+    const result = await lumaCallApi({ action: 'downloadFile', passcode: lumaCurrentPasscode, folderKey: folderKey });
+    if(!result.ok){
+      alert('Download failed: ' + (result.error || 'unknown error'));
+      return;
+    }
+    const byteChars = atob(result.base64Data);
+    const byteNumbers = new Array(byteChars.length);
+    for(let i=0; i<byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: result.mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = result.fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(err){
+    alert('Download failed: could not reach server.');
+  }
+}
+
+async function lumaStartDelete(folderKey){
+  const ok = window.confirm('Permanently delete this file? This cannot be undone.');
+  if(!ok) return;
+  const statusEl = document.getElementById(LUMA_FOLDER_ELEMENTS[folderKey].statusId);
+  statusEl.textContent = 'Deleting…';
+  try{
+    const result = await lumaCallApi({ action: 'deleteFile', passcode: lumaCurrentPasscode, folderKey: folderKey });
+    if(result.ok){
+      lumaLoadFileList();
+    } else {
+      statusEl.textContent = 'Delete failed: ' + (result.error || 'unknown error');
+    }
+  }catch(err){
+    statusEl.textContent = 'Delete failed: could not reach server.';
+  }
+}
 </script>
 
 </body>
